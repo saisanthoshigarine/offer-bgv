@@ -29,9 +29,9 @@ SENDER_EMAIL  = os.environ.get('SENDER_EMAIL')
 SENDER_NAME   = os.environ.get('SENDER_NAME')
 
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
-DATA_DIR   = os.path.join(BASE_DIR, 'data')
-LETTER_DIR = os.path.join(BASE_DIR, 'generated_letters')
+UPLOAD_DIR = "/tmp/uploads"
+DATA_DIR   = "/tmp/data"
+LETTER_DIR = "/tmp/generated_letters"
 for d in [UPLOAD_DIR+'/letterheads', UPLOAD_DIR+'/excel',
           UPLOAD_DIR+'/documents', DATA_DIR, LETTER_DIR]:
     os.makedirs(d, exist_ok=True)
