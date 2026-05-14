@@ -1,0 +1,12 @@
+flask>=3.0.0
+python-dotenv>=1.0.0
+pandas>=2.0.0
+openpyxl>=3.1.0
+reportlab>=4.0.0
+pypdf>=4.0.0
+pdfplumber>=0.10.0
+sib-api-v3-sdk>=7.6.0
+werkzeug>=3.0.0
+gunicorn>=21.2.0  
+pdfplumber>=0.10.0   
+pypdf>=4.0.0    

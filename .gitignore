@@ -1,0 +1,11 @@
+.env
+__pycache__/
+uploads/
+generated_letters/
+data/
+*.pyc
+.vscode/
+*.xlsx
+*.pdf
+.DS_Store
+Thumbs.db
