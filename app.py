@@ -1,16 +1,3 @@
-"""
-OfferFlow — app.py  (updated)
-Changes:
-  1. Pattern selection: 4 named patterns (Classic, Modern, Minimal, Executive) +
-     a Custom pattern that accepts free-text via textarea. Each pattern renders a
-     distinctly structured PDF.
-  2. Preview: offer-letter content is composited ON TOP of the letterhead PDF
-     (page-1 rendered as background image) so the preview matches the real PDF.
-  3. Background-verification email is sent ONLY after the candidate clicks
-     "Accept Offer", which was already partially implemented but is now
-     guaranteed to fire once and include the correct verification link.
-"""
-
 import os, io, json, uuid, base64, hashlib, re, threading
 from datetime import datetime, timedelta
 
@@ -34,12 +21,12 @@ import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
+app.secret_key = os.environ.get('SECRET_KEY')
 
 BASE_URL      = os.environ.get('BASE_URL', 'http://localhost:5000')
-BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
-SENDER_EMAIL  = os.environ.get('SENDER_EMAIL', 'noreply@offerflow.com')
-SENDER_NAME   = os.environ.get('SENDER_NAME',  'OfferFlow HR')
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
+SENDER_EMAIL  = os.environ.get('SENDER_EMAIL')
+SENDER_NAME   = os.environ.get('SENDER_NAME')
 
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
@@ -79,48 +66,63 @@ def validate_password(pw):
 def current_user():
     uid = session.get('user_id')
     return get_users().get(uid) if uid else None
-
-
 # ── Email via Brevo API ───────────────────────────────────────────────────────
 def send_email(to, subject, html_body, attach_path=None, attach_name=None):
     try:
         configuration = sib_api_v3_sdk.Configuration()
         configuration.api_key['api-key'] = BREVO_API_KEY
+
         api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
-            sib_api_v3_sdk.ApiClient(configuration))
+            sib_api_v3_sdk.ApiClient(configuration)
+        )
+
         attachments = []
+
         if attach_path and os.path.exists(attach_path):
             with open(attach_path, 'rb') as f:
                 encoded_file = base64.b64encode(f.read()).decode()
-            attachments.append({'content': encoded_file,
-                                 'name': attach_name or 'offer_letter.pdf'})
+
+            attachments.append({
+                'content': encoded_file,
+                'name': attach_name or 'offer_letter.pdf'
+            })
+
         send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
             to=[{'email': to}],
-            sender={'name': SENDER_NAME, 'email': SENDER_EMAIL},
+            sender={
+                'name': SENDER_NAME,
+                'email': SENDER_EMAIL
+            },
             subject=subject,
             html_content=html_body,
-            attachment=attachments)
+            attachment=attachments
+        )
+
         api_instance.send_transac_email(send_smtp_email)
+
         print(f'[BREVO EMAIL SENT] → {to}')
+
         return True
+
     except ApiException as e:
         print(f'[BREVO ERROR] → {e}')
         return False
+
     except Exception as e:
         print(f'[GENERAL EMAIL ERROR] → {e}')
         return False
 
+
 def send_async(to, subject, html, attach_path=None, attach_name=None):
-    threading.Thread(target=send_email,
-                     args=(to, subject, html, attach_path, attach_name),
-                     daemon=True).start()
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  PATTERN DEFINITIONS
-#  Each pattern is a dict consumed by generate_offer_pdf() and
-#  letterhead_preview_html() to change layout/colours/structure.
-# ══════════════════════════════════════════════════════════════════════════════
+    return send_email(
+        to,
+        subject,
+        html,
+        attach_path,
+        attach_name
+    )
+    
+#-------------------------patterns for offer letter designs-------------------------
 PATTERNS = {
     'classic': {
         'label':       'Classic',
@@ -172,11 +174,7 @@ PATTERNS = {
         'desc':   'Write your own offer letter content in the text area below.',
     },
 }
-
-
-# ══════════════════════════════════════════════════════════════════════════════
 #  PDF GENERATOR  (pattern-aware)
-# ══════════════════════════════════════════════════════════════════════════════
 def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''):
     cid      = candidate['id']
     pat      = PATTERNS.get(pattern_key, PATTERNS['classic'])
@@ -537,11 +535,7 @@ def _merge_letterhead(lh_path, content_bytes, out_path):
 
     except ImportError:
         open(out_path, 'wb').write(content_bytes)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
 #  PREVIEW HTML  (pattern-aware, letterhead as background)
-# ══════════════════════════════════════════════════════════════════════════════
 def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_text=''):
     company  = hr_user['company_name']
     lh_path  = hr_user.get('letterhead', '')
@@ -759,11 +753,7 @@ def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_te
     </div>
   </div>
 </div>'''
-
-
-# ══════════════════════════════════════════════════════════════════════════════
 #  EMAIL HTML BUILDERS
-# ══════════════════════════════════════════════════════════════════════════════
 def offer_email_html(c, hr, accept_link, decline_link):
     company  = hr['company_name']
     name     = c.get('name', '')
@@ -1194,21 +1184,6 @@ def api_send_offer_emails():
         cands[cid]['email_sent_at'] = str(datetime.now())
         sent += 1
     save_cands(cands)
-
-    # Auto-cancel after 48 hours
-    def auto_cancel(ids):
-        import time
-        time.sleep(172800)
-        c2 = get_cands()
-        changed = False
-        for i in ids:
-            if c2.get(i, {}).get('offer_status') == 'pending':
-                c2[i]['offer_status'] = 'cancelled'
-                changed = True
-        if changed:
-            save_cands(c2)
-
-    threading.Thread(target=auto_cancel, args=(cids,), daemon=True).start()
     return jsonify({'success': True, 'sent': sent})
 
 
