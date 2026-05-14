@@ -1,3 +1,16 @@
+"""
+OfferFlow — app.py  (updated)
+Changes:
+  1. Pattern selection: 4 named patterns (Classic, Modern, Minimal, Executive) +
+     a Custom pattern that accepts free-text via textarea. Each pattern renders a
+     distinctly structured PDF.
+  2. Preview: offer-letter content is composited ON TOP of the letterhead PDF
+     (page-1 rendered as background image) so the preview matches the real PDF.
+  3. Background-verification email is sent ONLY after the candidate clicks
+     "Accept Offer", which was already partially implemented but is now
+     guaranteed to fire once and include the correct verification link.
+"""
+
 import os, io, json, uuid, base64, hashlib, re, threading
 from datetime import datetime, timedelta
 
@@ -21,12 +34,12 @@ import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY')
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
 
 BASE_URL      = os.environ.get('BASE_URL', 'http://localhost:5000')
-BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
-SENDER_EMAIL  = os.environ.get('SENDER_EMAIL')
-SENDER_NAME   = os.environ.get('SENDER_NAME')
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
+SENDER_EMAIL  = os.environ.get('SENDER_EMAIL', 'noreply@offerflow.com')
+SENDER_NAME   = os.environ.get('SENDER_NAME',  'OfferFlow HR')
 
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
