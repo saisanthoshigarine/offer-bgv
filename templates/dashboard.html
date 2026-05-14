@@ -1,0 +1,512 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — OfferFlow{% endblock %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ═══ Layout ═══════════════════════════════════════════════════════════ */
+.app-layout{display:flex;min-height:100vh;background:#f0f4fa}
+
+/* ═══ Sidebar ══════════════════════════════════════════════════════════ */
+.sidebar{width:260px;background:#0d1b3e;color:#fff;display:flex;flex-direction:column;
+         flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:200;overflow-y:auto}
+.sb-head{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.08);
+         display:flex;align-items:center;gap:10px}
+.sb-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#0ea5e9,#3b82f6);
+              border-radius:8px;display:flex;align-items:center;justify-content:center;
+              font-size:.85rem;flex-shrink:0}
+.sb-logo-text{font-family:'DM Serif Display',serif;font-size:1.25rem}
+
+.sb-nav{flex:1;padding:10px 0}
+.sb-section{font-size:.65rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+            color:rgba(255,255,255,.3);padding:12px 18px 4px}
+.sb-item{display:flex;align-items:center;gap:11px;padding:10px 18px;color:rgba(255,255,255,.65);
+         font-size:.865rem;cursor:pointer;transition:all .2s;border-left:3px solid transparent;
+         text-decoration:none;user-select:none}
+.sb-item:hover,.sb-item.active{background:rgba(255,255,255,.07);color:#fff;border-left-color:#0ea5e9}
+.sb-item i{width:16px;text-align:center;font-size:.9rem;flex-shrink:0}
+.sb-count{margin-left:auto;background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);
+          font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:10px;min-width:22px;
+          text-align:center}
+.sb-count.red{background:#ef4444;color:#fff}
+.sb-count.green{background:#10b981;color:#fff}
+
+.sb-actions{padding:12px;border-top:1px solid rgba(255,255,255,.07)}
+.sb-btn{display:flex;align-items:center;gap:9px;padding:10px 13px;border-radius:8px;border:none;
+        cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s;
+        font-family:'DM Sans',sans-serif;width:100%;margin-bottom:6px}
+.sb-btn-primary{background:linear-gradient(135deg,#1a56db,#0ea5e9);color:#fff}
+.sb-btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.sb-btn-ghost{background:rgba(255,255,255,.07);color:rgba(255,255,255,.75);
+              border:1px solid rgba(255,255,255,.1)}
+.sb-btn-ghost:hover{background:rgba(255,255,255,.13);color:#fff}
+
+.sb-user{padding:12px 16px;border-top:1px solid rgba(255,255,255,.07);
+         display:flex;align-items:center;gap:10px}
+.sb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1a56db,#0ea5e9);
+           display:flex;align-items:center;justify-content:center;font-weight:700;
+           font-size:.85rem;flex-shrink:0;color:#fff}
+.sb-user-info{flex:1;min-width:0}
+.sb-uname{font-size:.82rem;font-weight:600;color:#fff;white-space:nowrap;
+          overflow:hidden;text-overflow:ellipsis}
+.sb-company{font-size:.72rem;color:rgba(255,255,255,.38);white-space:nowrap;
+            overflow:hidden;text-overflow:ellipsis}
+
+/* ═══ Main ══════════════════════════════════════════════════════════════ */
+.main{margin-left:260px;flex:1;min-width:0;display:flex;flex-direction:column;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 28px;
+        display:flex;align-items:center;justify-content:space-between;
+        position:sticky;top:0;z-index:100}
+.topbar-left h1{font-family:'DM Serif Display',serif;font-size:1.4rem;color:#0d1b3e;line-height:1}
+.topbar-left p{color:#64748b;font-size:.78rem;margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+
+/* ═══ Pages ═════════════════════════════════════════════════════════════ */
+.page{padding:28px;display:none;animation:fadeIn .25s ease}
+.page.show{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ Overview Section Header ═══════════════════════════════════════════ */
+.overview-section{margin-bottom:28px}
+.overview-section-title{display:flex;align-items:center;gap:10px;margin-bottom:14px;
+                         padding-bottom:10px;border-bottom:2px solid #e2e8f0}
+.overview-section-title h2{font-family:'DM Serif Display',serif;font-size:1.2rem;
+                             color:#0d1b3e;margin:0}
+.overview-section-title .section-tag{display:inline-flex;align-items:center;gap:6px;
+  font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  padding:3px 10px;border-radius:20px}
+.tag-blue{background:#dbeafe;color:#1e40af}
+.tag-green{background:#d1fae5;color:#065f46}
+
+/* ═══ Stat cards grid ══════════════════════════════════════════════════ */
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.stat-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+
+.stat-card{background:#fff;border-radius:12px;padding:18px 16px;border:1px solid #e2e8f0;
+           cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.07);
+                 border-color:#1a56db}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.c-blue::after{background:#1a56db}
+.stat-card.c-green::after{background:#10b981}
+.stat-card.c-red::after{background:#ef4444}
+.stat-card.c-amber::after{background:#f97316}
+.stat-card.c-gray::after{background:#94a3b8}
+.stat-card.c-teal::after{background:#0ea5e9}
+.stat-card.c-purple::after{background:#7c3aed}
+.stat-card.c-navy::after{background:#0d1b3e}
+
+.sc-num{font-family:'DM Serif Display',serif;font-size:2rem;color:#0d1b3e;
+        line-height:1;margin-bottom:4px}
+.sc-lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b}
+.sc-icon{position:absolute;bottom:10px;right:14px;font-size:1.5rem;opacity:.07;color:#0d1b3e}
+
+/* ═══ Charts row ════════════════════════════════════════════════════════ */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:28px}
+.chart-card{background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:22px}
+.chart-card h3{font-family:'DM Serif Display',serif;font-size:1.05rem;color:#0d1b3e;
+               margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.chart-card p{font-size:.78rem;color:#64748b;margin-bottom:16px}
+.chart-wrap{position:relative;height:220px;display:flex;align-items:center;
+            justify-content:center}
+.chart-legend{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:.8rem;color:#475569}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ═══ Table pages ═══════════════════════════════════════════════════════ */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.page-header h2{font-family:'DM Serif Display',serif;font-size:1.3rem;color:#0d1b3e}
+.count-badge{background:#dbeafe;color:#1e40af;font-size:.78rem;font-weight:700;
+             padding:4px 12px;border-radius:20px}
+
+.tbl-wrap{background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden}
+.data-tbl{width:100%;border-collapse:collapse}
+.data-tbl th{background:#f8faff;padding:11px 15px;text-align:left;font-size:.72rem;
+             font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748b;
+             border-bottom:1px solid #e2e8f0}
+.data-tbl td{padding:12px 15px;font-size:.875rem;border-bottom:1px solid #f1f5f9;color:#1e293b}
+.data-tbl tr:last-child td{border-bottom:none}
+.data-tbl tr:hover td{background:#f8fbff}
+.empty-row td{text-align:center;padding:56px 20px;color:#94a3b8}
+.empty-row i{font-size:2.2rem;display:block;margin-bottom:10px;opacity:.25}
+
+/* badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:16px;
+       font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.bg-acc{background:#d1fae5;color:#065f46}
+.bg-dec{background:#fee2e2;color:#991b1b}
+.bg-pend{background:#fef3c7;color:#92400e}
+.bg-canc{background:#f1f5f9;color:#475569}
+.bg-ver{background:#d1fae5;color:#065f46}
+.bg-rej{background:#fee2e2;color:#991b1b}
+.bg-vp{background:#fef3c7;color:#92400e}
+.bg-blue{background:#dbeafe;color:#1e40af}
+
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.main{margin-left:0}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}.stat-grid-3{grid-template-columns:1fr 1fr}
+  .charts-row{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+
+  <!-- ══ Sidebar ══════════════════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sb-head">
+      <div class="sb-logo-icon"><i class="fas fa-file-contract" style="color:#fff"></i></div>
+      <span class="sb-logo-text">OfferFlow</span>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-section">Main</div>
+      <a class="sb-item active" data-page="dash" onclick="nav('dash',this)">
+        <i class="fas fa-th-large"></i> Dashboard
+      </a>
+
+      <div class="sb-section">Offer Overview</div>
+      <a class="sb-item" data-page="all" onclick="nav('all',this)">
+        <i class="fas fa-list"></i> All Offers
+        <span class="sb-count" id="cnt-all">0</span>
+      </a>
+      <a class="sb-item" data-page="accepted" onclick="nav('accepted',this)">
+        <i class="fas fa-check-circle"></i> Offer Accepted
+        <span class="sb-count green" id="cnt-acc">0</span>
+      </a>
+      <a class="sb-item" data-page="declined" onclick="nav('declined',this)">
+        <i class="fas fa-times-circle"></i> Offer Declined
+        <span class="sb-count red" id="cnt-dec">0</span>
+      </a>
+      <a class="sb-item" data-page="pending" onclick="nav('pending',this)">
+        <i class="fas fa-clock"></i> Action Pending
+        <span class="sb-count" id="cnt-pend">0</span>
+      </a>
+      <a class="sb-item" data-page="cancelled" onclick="nav('cancelled',this)">
+        <i class="fas fa-ban"></i> Cancelled
+        <span class="sb-count" id="cnt-canc">0</span>
+      </a>
+
+      <div class="sb-section">Verification Overview</div>
+      <a class="sb-item" data-page="verified" onclick="nav('verified',this)">
+        <i class="fas fa-shield-alt"></i> Verified
+        <span class="sb-count green" id="cnt-ver">0</span>
+      </a>
+      <a class="sb-item" data-page="rejected" onclick="nav('rejected',this)">
+        <i class="fas fa-user-times"></i> Rejected
+        <span class="sb-count red" id="cnt-rej">0</span>
+      </a>
+      <a class="sb-item" data-page="verpending" onclick="nav('verpending',this)">
+        <i class="fas fa-hourglass-half"></i> Ver. Pending
+        <span class="sb-count" id="cnt-vp">0</span>
+      </a>
+    </nav>
+
+    <div class="sb-actions">
+      <button class="sb-btn sb-btn-primary" onclick="location.href='/upload-excel'">
+        <i class="fas fa-upload"></i> Upload Excel
+      </button>
+      <button class="sb-btn sb-btn-ghost" onclick="location.href='/api/download-template'">
+        <i class="fas fa-download"></i> Export Offers
+      </button>
+    </div>
+
+    <div class="sb-user">
+      <div class="sb-avatar" id="sbAvatar">H</div>
+      <div class="sb-user-info">
+        <div class="sb-uname" id="sbName">Loading…</div>
+        <div class="sb-company" id="sbCompany"></div>
+      </div>
+      <a href="/logout" title="Logout" style="color:rgba(255,255,255,.35);font-size:.95rem;margin-left:4px">
+        <i class="fas fa-sign-out-alt"></i>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ══ Main ═════════════════════════════════════════════════════════ -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 id="pageTitle">Dashboard</h1>
+        <p id="pageSub">Overview of your hiring pipeline</p>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary btn-sm" onclick="location.href='/upload-excel'">
+          <i class="fas fa-plus"></i> New Batch
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="location.href='/logout'">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </div>
+
+    <!-- ════ DASHBOARD PAGE ══════════════════════════════════════════ -->
+    <div class="page show" id="page-dash">
+
+      <!-- ── Offer Overview Section ── -->
+      <div class="overview-section">
+        <div class="overview-section-title">
+          <h2><i class="fas fa-file-alt" style="color:#1a56db;font-size:1rem"></i> Offer Overview</h2>
+          <span class="section-tag tag-blue"><i class="fas fa-briefcase"></i> Offer Letters</span>
+        </div>
+        <div class="stat-grid" id="offerStatGrid">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- ── Verification Overview Section ── -->
+      <div class="overview-section">
+        <div class="overview-section-title">
+          <h2><i class="fas fa-shield-alt" style="color:#10b981;font-size:1rem"></i> Verification Overview</h2>
+          <span class="section-tag tag-green"><i class="fas fa-user-check"></i> Background Checks</span>
+        </div>
+        <div class="stat-grid-3" id="verStatGrid">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- ── Pie Charts ── -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3><i class="fas fa-chart-pie" style="color:#1a56db;font-size:.9rem"></i> Offer Status Breakdown</h3>
+          <p>Distribution of all sent offers by current status</p>
+          <div class="chart-wrap">
+            <canvas id="offerChart" style="max-height:200px;max-width:200px"></canvas>
+          </div>
+          <div class="chart-legend" id="offerLegend"></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fas fa-chart-pie" style="color:#10b981;font-size:.9rem"></i> Verification Status Breakdown</h3>
+          <p>Distribution of candidates by verification status</p>
+          <div class="chart-wrap">
+            <canvas id="verChart" style="max-height:200px;max-width:200px"></canvas>
+          </div>
+          <div class="chart-legend" id="verLegend"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ LIST PAGE (reused for all table views) ═══════════════════ -->
+    <div class="page" id="page-list">
+      <div class="page-header">
+        <h2 id="listTitle">All Offers</h2>
+        <span class="count-badge" id="listCount">0 records</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="data-tbl">
+          <thead id="tblHead"></thead>
+          <tbody id="tblBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /main -->
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let dashStats = {};
+let offerChart = null, verChart = null;
+
+/* ── nav ── */
+const PAGE_CFG = {
+  dash:      {title:'Dashboard',         sub:'Overview of your hiring pipeline', type:'dash'},
+  all:       {title:'All Offers',        sub:'Complete offer list',               type:'offers', status:null},
+  accepted:  {title:'Accepted Offers',   sub:'Candidates who accepted',           type:'offers', status:'accepted'},
+  declined:  {title:'Declined Offers',   sub:'Candidates who declined',           type:'offers', status:'declined'},
+  pending:   {title:'Action Pending',    sub:'Awaiting candidate response',       type:'offers', status:'pending'},
+  cancelled: {title:'Cancelled Offers',  sub:'Expired — no response after 48h',  type:'offers', status:'cancelled'},
+  verified:  {title:'Verified',          sub:'Background-verified candidates',    type:'verifications', status:'verified'},
+  rejected:  {title:'Rejected',          sub:'Verification rejected',             type:'verifications', status:'rejected'},
+  verpending:{title:'Verification Pending',sub:'Awaiting background check result',type:'verifications', status:'pending'},
+};
+
+function nav(key, el){
+  const cfg = PAGE_CFG[key];
+  document.getElementById('pageTitle').textContent = cfg.title;
+  document.getElementById('pageSub').textContent   = cfg.sub;
+  document.querySelectorAll('.sb-item').forEach(n => n.classList.remove('active'));
+  (el || document.querySelector(`[data-page="${key}"]`))?.classList.add('active');
+
+  if(cfg.type === 'dash'){
+    document.getElementById('page-dash').classList.add('show');
+    document.getElementById('page-list').classList.remove('show');
+    return;
+  }
+  document.getElementById('page-dash').classList.remove('show');
+  document.getElementById('page-list').classList.add('show');
+  loadList(cfg.type, cfg.status, cfg.title);
+}
+
+/* ── load stats ── */
+async function loadStats(){
+  const d = await apiFetch('/api/dashboard-stats');
+  dashStats = d;
+
+  // sidebar counts
+  document.getElementById('sbAvatar').textContent  = (d.company_name||'H')[0].toUpperCase();
+  document.getElementById('sbName').textContent    = d.company_name || 'HR';
+  document.getElementById('sbCompany').textContent = d.company_name || '';
+
+  document.getElementById('cnt-all').textContent  = d.total_offers;
+  document.getElementById('cnt-acc').textContent  = d.offer_accepted;
+  document.getElementById('cnt-dec').textContent  = d.offer_declined;
+  document.getElementById('cnt-pend').textContent = d.action_pending;
+  document.getElementById('cnt-canc').textContent = d.cancelled;
+  document.getElementById('cnt-ver').textContent  = d.verified;
+  document.getElementById('cnt-rej').textContent  = d.rejected;
+  document.getElementById('cnt-vp').textContent   = d.verification_pending;
+
+  renderOfferSection(d);
+  renderVerSection(d);
+  renderCharts(d);
+}
+
+/* ── Offer Overview stat cards ── */
+function renderOfferSection(d){
+  document.getElementById('offerStatGrid').innerHTML = [
+    {cls:'c-blue',  icon:'fa-file-alt',     num:d.total_offers,   lbl:'Total Offers',   page:'all'},
+    {cls:'c-green', icon:'fa-check-circle',  num:d.offer_accepted, lbl:'Offer Accepted', page:'accepted'},
+    {cls:'c-red',   icon:'fa-times-circle',  num:d.offer_declined, lbl:'Offer Declined', page:'declined'},
+    {cls:'c-amber', icon:'fa-clock',         num:d.action_pending, lbl:'Action Pending', page:'pending'},
+    {cls:'c-gray',  icon:'fa-ban',           num:d.cancelled,      lbl:'Cancelled',      page:'cancelled'},
+  ].map(s=>`
+    <div class="stat-card ${s.cls}" onclick="nav('${s.page}')">
+      <div class="sc-num">${s.num}</div>
+      <div class="sc-lbl">${s.lbl}</div>
+      <i class="fas ${s.icon} sc-icon"></i>
+    </div>`).join('');
+}
+
+/* ── Verification Overview stat cards ── */
+function renderVerSection(d){
+  document.getElementById('verStatGrid').innerHTML = [
+    {cls:'c-green',  icon:'fa-shield-alt',    num:d.verified,             lbl:'Verified',              page:'verified'},
+    {cls:'c-red',    icon:'fa-user-times',     num:d.rejected,             lbl:'Rejected',              page:'rejected'},
+    {cls:'c-navy',   icon:'fa-hourglass-half', num:d.verification_pending, lbl:'Verification Pending',  page:'verpending'},
+  ].map(s=>`
+    <div class="stat-card ${s.cls}" onclick="nav('${s.page}')">
+      <div class="sc-num">${s.num}</div>
+      <div class="sc-lbl">${s.lbl}</div>
+      <i class="fas ${s.icon} sc-icon"></i>
+    </div>`).join('');
+}
+
+/* ── Charts ── */
+function renderCharts(d){
+  // Offer pie
+  const offerData = [d.offer_accepted, d.offer_declined, d.action_pending, d.cancelled];
+  const offerLabels = ['Accepted','Declined','Pending','Cancelled'];
+  const offerColors = ['#10b981','#ef4444','#f97316','#94a3b8'];
+
+  if(offerChart) offerChart.destroy();
+  const ctx1 = document.getElementById('offerChart').getContext('2d');
+  const total1 = offerData.reduce((a,b)=>a+b,0);
+  if(total1 === 0){
+    ctx1.font = '13px DM Sans';
+    ctx1.fillStyle = '#94a3b8';
+    ctx1.textAlign = 'center';
+    ctx1.fillText('No data yet', 100, 110);
+  } else {
+    offerChart = new Chart(ctx1, {
+      type:'doughnut',
+      data:{labels:offerLabels, datasets:[{data:offerData,backgroundColor:offerColors,
+            borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+               plugins:{legend:{display:false},tooltip:{callbacks:{
+                 label:ctx=>`${ctx.label}: ${ctx.raw} (${total1>0?Math.round(ctx.raw/total1*100):0}%)`
+               }}}}
+    });
+  }
+  document.getElementById('offerLegend').innerHTML = offerLabels.map((l,i)=>
+    `<div class="legend-item"><div class="legend-dot" style="background:${offerColors[i]}"></div>
+     ${l}: <b style="margin-left:auto">${offerData[i]}</b></div>`).join('');
+
+  // Verification pie
+  const verData   = [d.verified, d.rejected, d.verification_pending];
+  const verLabels = ['Verified','Rejected','Pending'];
+  const verColors = ['#10b981','#ef4444','#f97316'];
+
+  if(verChart) verChart.destroy();
+  const ctx2 = document.getElementById('verChart').getContext('2d');
+  const total2 = verData.reduce((a,b)=>a+b,0);
+  if(total2 === 0){
+    ctx2.font = '13px DM Sans';
+    ctx2.fillStyle = '#94a3b8';
+    ctx2.textAlign = 'center';
+    ctx2.fillText('No data yet', 100, 110);
+  } else {
+    verChart = new Chart(ctx2, {
+      type:'doughnut',
+      data:{labels:verLabels, datasets:[{data:verData,backgroundColor:verColors,
+            borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+               plugins:{legend:{display:false},tooltip:{callbacks:{
+                 label:ctx=>`${ctx.label}: ${ctx.raw} (${total2>0?Math.round(ctx.raw/total2*100):0}%)`
+               }}}}
+    });
+  }
+  document.getElementById('verLegend').innerHTML = verLabels.map((l,i)=>
+    `<div class="legend-item"><div class="legend-dot" style="background:${verColors[i]}"></div>
+     ${l}: <b style="margin-left:auto">${verData[i]}</b></div>`).join('');
+}
+
+/* ── Load list table ── */
+const STATUS_BADGE = {
+  accepted:'<span class="badge bg-acc"><i class="fas fa-check-circle"></i> Accepted</span>',
+  declined:'<span class="badge bg-dec"><i class="fas fa-times-circle"></i> Declined</span>',
+  pending: '<span class="badge bg-pend"><i class="fas fa-clock"></i> Pending</span>',
+  cancelled:'<span class="badge bg-canc"><i class="fas fa-ban"></i> Cancelled</span>',
+  verified:'<span class="badge bg-ver"><i class="fas fa-shield-alt"></i> Verified</span>',
+  rejected:'<span class="badge bg-rej"><i class="fas fa-times-circle"></i> Rejected</span>',
+};
+
+async function loadList(type, status, title){
+  document.getElementById('listTitle').textContent = title;
+  document.getElementById('listCount').textContent = 'Loading…';
+  const url = type==='offers'
+    ? `/api/offers${status?'?status='+status:''}`
+    : `/api/verifications${status?'?status='+status:''}`;
+  const data = await apiFetch(url);
+  document.getElementById('listCount').textContent = `${data.length} record${data.length!==1?'s':''}`;
+
+  const head = document.getElementById('tblHead');
+  const body = document.getElementById('tblBody');
+
+  if(type==='offers'){
+    head.innerHTML = `<tr>
+      <th>#</th><th>Name</th><th>Role</th><th>Joining Date</th>
+      <th>Gmail ID</th><th>Salary</th><th>Employment Type</th><th>Offer Status</th>
+    </tr>`;
+    body.innerHTML = data.length ? data.map((r,i)=>`<tr>
+      <td style="color:#94a3b8;font-size:.8rem">${i+1}</td>
+      <td><b style="color:#0d1b3e">${r.name}</b></td>
+      <td>${r.role}</td>
+      <td>${r.joining_date||'—'}</td>
+      <td><a href="mailto:${r.email}" style="color:#1a56db">${r.email}</a></td>
+      <td>₹${r.salary}</td>
+      <td><span class="badge bg-blue">${r.employment_type.replace(/_/g,' ')}</span></td>
+      <td>${STATUS_BADGE[r.offer_status]||r.offer_status}</td>
+    </tr>`).join('')
+    : `<tr class="empty-row"><td colspan="8"><i class="fas fa-inbox"></i>No records found</td></tr>`;
+  } else {
+    head.innerHTML = `<tr>
+      <th>#</th><th>Name</th><th>Gmail ID</th><th>Salary</th><th>Phone</th><th>Verification Status</th>
+    </tr>`;
+    body.innerHTML = data.length ? data.map((r,i)=>`<tr>
+      <td style="color:#94a3b8;font-size:.8rem">${i+1}</td>
+      <td><b style="color:#0d1b3e">${r.name}</b></td>
+      <td><a href="mailto:${r.email}" style="color:#1a56db">${r.email}</a></td>
+      <td>₹${r.salary}</td>
+      <td>${r.phone||'—'}</td>
+      <td>${STATUS_BADGE[r.verification_status]||r.verification_status}</td>
+    </tr>`).join('')
+    : `<tr class="empty-row"><td colspan="6"><i class="fas fa-inbox"></i>No records found</td></tr>`;
+  }
+}
+
+// Auto-refresh stats every 30 seconds
+loadStats();
+setInterval(loadStats, 30000);
+</script>
+{% endblock %}

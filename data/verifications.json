@@ -1,0 +1,35 @@
+{
+  "4ceb882b-99d9-4e68-826d-b791c3116f54": {
+    "id": "4ceb882b-99d9-4e68-826d-b791c3116f54",
+    "candidate_id": "5837a5e9-625a-49bb-a272-638d388b5be1",
+    "hr_id": "3d6baef9-f83b-4b72-af4a-c4aaa50139a8",
+    "name": "Sai Santhoshi ",
+    "email": "saisanthoshig.10@gmail.com",
+    "salary": "100000",
+    "phone": "",
+    "verification_status": "pending",
+    "created_at": "2026-05-12 11:33:26.635701"
+  },
+  "3e60f512-83a8-4196-8d69-5b6a9e32d99c": {
+    "id": "3e60f512-83a8-4196-8d69-5b6a9e32d99c",
+    "candidate_id": "e27a738e-5444-4fe2-9fef-c4ebcd310734",
+    "hr_id": "3d6baef9-f83b-4b72-af4a-c4aaa50139a8",
+    "name": "Sai Santhoshi ",
+    "email": "saisanthoshig.10@gmail.com",
+    "salary": 100000,
+    "phone": "",
+    "verification_status": "pending",
+    "created_at": "2026-05-12 11:34:50.646938"
+  },
+  "7610ba06-c6c9-41b0-bec0-4bf58fc80577": {
+    "id": "7610ba06-c6c9-41b0-bec0-4bf58fc80577",
+    "candidate_id": "f8b0404f-75d9-4d53-849b-911a1fb3e2d1",
+    "hr_id": "3d6baef9-f83b-4b72-af4a-c4aaa50139a8",
+    "name": "Sai Santhoshi ",
+    "email": "saisanthoshig.10@gmail.com",
+    "salary": "100000",
+    "phone": "",
+    "verification_status": "pending",
+    "created_at": "2026-05-12 11:37:12.004934"
+  }
+}

@@ -1,0 +1,33 @@
+<!-- offer_accepted.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offer Accepted — OfferFlow</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:linear-gradient(135deg,#f0fdf4,#dcfce7);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#fff;border-radius:20px;padding:60px 48px;max-width:520px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.08)}
+.icon{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:2rem;color:#fff}
+h1{font-family:'DM Serif Display',serif;font-size:2rem;color:#065f46;margin-bottom:12px}
+p{color:#64748b;line-height:1.7;margin-bottom:8px}
+.info-box{background:#f0fdf4;border-radius:12px;padding:20px;margin:24px 0;text-align:left}
+.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dcfce7;font-size:.9rem}
+.info-row:last-child{border-bottom:none}.info-row b{color:#065f46}
+.next-badge{display:inline-flex;align-items:center;gap:8px;background:#dbeafe;color:#1e40af;padding:10px 20px;border-radius:10px;font-weight:600;font-size:.9rem;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">✓</div>
+  <h1>Offer Accepted!</h1>
+  <p>Congratulations, <b>{{ candidate.name }}</b>! You have successfully accepted the offer.</p>
+  <div class="info-box">
+    <div class="info-row"><span>Role</span><b>{{ candidate.role }}</b></div>
+    <div class="info-row"><span>Joining Date</span><b>{{ candidate.joining_date }}</b></div>
+    <div class="info-row"><span>Salary</span><b>₹{{ candidate.salary }}</b></div>
+    <div class="info-row"><span>Employment Type</span><b>{{ candidate.employment_type.replace('_',' ').title() }}</b></div>
+  </div>
+  <div class="next-badge">🔒 Background verification form will be sent to your email shortly</div>
+</div>
+</body></html>

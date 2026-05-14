@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offer Declined — OfferFlow</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:linear-gradient(135deg,#fff1f2,#fee2e2);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#fff;border-radius:20px;padding:60px 48px;max-width:480px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.08)}
+.icon{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:2rem;color:#fff}
+h1{font-family:'DM Serif Display',serif;font-size:2rem;color:#991b1b;margin-bottom:12px}
+p{color:#64748b;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">✕</div>
+  <h1>Offer Declined</h1>
+  <p>Thank you for your time, <b>{{ candidate.name }}</b>. We understand your decision and wish you all the best in your future endeavours.</p>
+  <p style="margin-top:16px;font-size:.85rem">If you change your mind, please reach out to our HR team directly.</p>
+</div>
+</body></html>

@@ -1,0 +1,623 @@
+{% extends 'base.html' %}
+{% block title %}Upload & Preview — OfferFlow{% endblock %}
+{% block head %}
+<style>
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.upload-layout{display:flex;min-height:100vh;background:var(--bg)}
+.upload-sidebar{width:var(--sidebar-w,240px);background:var(--navy);flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.upload-sidebar-head{padding:24px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-logo{display:flex;align-items:center;gap:10px;font-family:'DM Serif Display',serif;font-size:1.3rem;color:#fff}
+.sidebar-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--teal),var(--blue-l));border-radius:8px;display:flex;align-items:center;justify-content:center}
+.back-link{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.6);padding:16px 20px;font-size:.85rem;cursor:pointer;transition:color .2s;text-decoration:none}
+.back-link:hover{color:#fff}
+.cand-list{flex:1;overflow-y:auto;padding:8px 0}
+.cand-item{padding:12px 20px;cursor:pointer;border-left:3px solid transparent;transition:all .2s;color:rgba(255,255,255,.7)}
+.cand-item:hover,.cand-item.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:var(--teal)}
+.cand-item-name{font-weight:600;font-size:.85rem}
+.cand-item-role{font-size:.75rem;color:rgba(255,255,255,.4);margin-top:2px}
+
+.upload-main{flex:1;overflow-y:auto}
+.topbar2{background:#fff;border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar2 h1{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--navy)}
+
+/* ── Stepper ─────────────────────────────────────────────────────────────── */
+.stepper{display:flex;align-items:center;padding:20px 32px;background:#fff;border-bottom:1px solid var(--border);gap:0;overflow-x:auto}
+.step-item{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.step-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;transition:all .3s}
+.step-circle.done{background:var(--green);color:#fff}
+.step-circle.active{background:var(--blue);color:#fff;box-shadow:0 0 0 4px rgba(26,86,219,.18)}
+.step-circle.inactive{background:var(--border);color:var(--muted)}
+.step-label{font-size:.82rem;font-weight:600;color:var(--muted);white-space:nowrap}
+.step-label.active{color:var(--blue)}.step-label.done{color:var(--green)}
+.step-line{flex:1;height:2px;background:var(--border);margin:0 8px;min-width:16px;transition:background .3s}
+.step-line.done{background:var(--green)}
+
+/* ── Step content ────────────────────────────────────────────────────────── */
+.step-content{padding:32px}
+.step-panel{display:none}.step-panel.active{display:block;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Drop zone ───────────────────────────────────────────────────────────── */
+.dropzone{border:2px dashed var(--border);border-radius:12px;padding:56px 40px;text-align:center;cursor:pointer;transition:all .3s;background:#fafbff}
+.dropzone:hover,.dropzone.drag{border-color:var(--blue);background:#f0f4ff;transform:scale(1.005)}
+.dropzone-icon{font-size:2.6rem;color:#16a34a;margin-bottom:16px}
+.dropzone p{color:var(--muted);margin-bottom:6px;font-size:.95rem}
+.dropzone span{font-size:.82rem;color:var(--muted)}
+.required-cols-info{background:#f0f4ff;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:.85rem;color:var(--navy);border-left:3px solid var(--blue)}
+.required-cols-info b{display:block;margin-bottom:6px}
+
+/* ── Employment type cards ───────────────────────────────────────────────── */
+.emp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:16px 0}
+.emp-card{border:2px solid var(--border);border-radius:12px;padding:22px 20px;cursor:pointer;text-align:center;transition:all .2s}
+.emp-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 4px 16px rgba(26,86,219,.1)}
+.emp-card.selected{border-color:var(--blue);background:#f0f4ff;box-shadow:0 0 0 3px rgba(26,86,219,.12)}
+.emp-card i{font-size:1.9rem;margin-bottom:12px;display:block}
+.emp-card-title{font-weight:700;font-size:.9rem;color:var(--navy)}
+.emp-card-sub{font-size:.78rem;color:var(--muted);margin-top:4px;line-height:1.5}
+
+/* ── Pattern cards ───────────────────────────────────────────────────────── */
+.pattern-section-title{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy);margin-bottom:4px}
+.pattern-section-sub{color:var(--muted);font-size:.85rem;margin-bottom:20px}
+.pattern-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:20px}
+.pattern-card{border:2px solid var(--border);border-radius:12px;padding:18px 16px 14px;cursor:pointer;transition:all .22s;position:relative;background:#fff;overflow:hidden}
+.pattern-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;opacity:0;transition:opacity .2s}
+.pattern-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.pattern-card:hover::before{opacity:1}
+.pattern-card.selected{border-color:var(--blue);background:#f0f4ff;box-shadow:0 0 0 3px rgba(26,86,219,.12)}
+.pattern-card.selected::before{opacity:1}
+.pattern-swatch{width:32px;height:32px;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;color:#fff}
+.pattern-card h4{font-size:.9rem;font-weight:700;color:var(--navy);margin-bottom:5px}
+.pattern-card p{font-size:.75rem;color:var(--muted);line-height:1.55;margin:0}
+.pattern-check{position:absolute;top:11px;right:11px;color:var(--blue);font-size:.85rem;opacity:0;transition:opacity .2s}
+.pattern-card.selected .pattern-check{opacity:1}
+.pattern-custom-badge{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;font-weight:700;background:#fef3c7;color:#92400e;border-radius:20px;padding:2px 8px;margin-bottom:10px}
+
+/* Custom text area */
+.custom-text-block{background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;padding:20px;margin-top:4px;animation:fadeUp .2s ease}
+.custom-text-block label{display:block;font-size:.85rem;font-weight:600;color:#92400e;margin-bottom:8px}
+.custom-text-block textarea{width:100%;border:1.5px solid #fcd34d;border-radius:8px;padding:12px;font-size:.85rem;font-family:'Courier New',monospace;color:#1e293b;background:#fffdf5;resize:vertical;min-height:220px;line-height:1.7;box-sizing:border-box;transition:border-color .2s}
+.custom-text-block textarea:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.12)}
+.custom-text-block .hint{font-size:.75rem;color:#b45309;margin-top:8px;line-height:1.6}
+.placeholder-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.placeholder-tag{background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:.72rem;font-family:'Courier New',monospace;padding:2px 8px;border-radius:4px;cursor:pointer;transition:background .15s}
+.placeholder-tag:hover{background:#fde68a}
+
+/* ── Preview pane ────────────────────────────────────────────────────────── */
+.preview-layout{display:flex;gap:20px;align-items:flex-start}
+.preview-cand-list{width:210px;flex-shrink:0;background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden;position:sticky;top:80px}
+.preview-cand-list h4{padding:14px 16px;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);margin:0}
+.preview-cand-item{padding:11px 16px;cursor:pointer;font-size:.84rem;border-bottom:1px solid #f5f7fa;transition:all .2s;color:var(--navy)}
+.preview-cand-item:last-child{border-bottom:none}
+.preview-cand-item:hover{background:#f0f4ff;color:var(--blue)}
+.preview-cand-item.active{background:#f0f4ff;color:var(--blue);font-weight:700;border-left:3px solid var(--blue)}
+.preview-pane{flex:1;background:#fff;border-radius:12px;border:1px solid var(--border);padding:28px;min-height:420px}
+.preview-loading{text-align:center;padding:60px 0;color:var(--muted)}
+.preview-loading i{font-size:2rem;opacity:.25;display:block;margin-bottom:12px}
+.preview-spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Utility ─────────────────────────────────────────────────────────────── */
+.nav-btns{display:flex;gap:12px;margin-top:24px;justify-content:flex-end}
+.section-label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:12px}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="upload-layout">
+
+  <!-- ── Sidebar ── -->
+  <div class="upload-sidebar">
+    <div class="upload-sidebar-head">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon"><i class="fas fa-file-contract" style="color:#fff;font-size:.9rem"></i></div>
+        OfferFlow
+      </div>
+    </div>
+    <a href="/dashboard" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    <div id="candListSidebar" class="cand-list">
+      <div style="padding:20px;color:rgba(255,255,255,.3);font-size:.8rem;text-align:center">
+        Upload an Excel file to see candidates here
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main ── -->
+  <div class="upload-main">
+
+    <div class="topbar2">
+      <h1>Upload &amp; Send Offer Letters</h1>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost btn-sm" onclick="location.href='/dashboard'"><i class="fas fa-th-large"></i> Dashboard</button>
+        <button class="btn btn-danger btn-sm" onclick="location.href='/logout'"><i class="fas fa-sign-out-alt"></i> Logout</button>
+      </div>
+    </div>
+
+    <!-- Stepper -->
+    <div class="stepper">
+      <div class="step-item">
+        <div class="step-circle active" id="sc1">1</div>
+        <div class="step-label active" id="sl1">Upload Excel</div>
+      </div>
+      <div class="step-line" id="line1"></div>
+      <div class="step-item">
+        <div class="step-circle inactive" id="sc2">2</div>
+        <div class="step-label" id="sl2">Employment Type</div>
+      </div>
+      <div class="step-line" id="line2"></div>
+      <div class="step-item">
+        <div class="step-circle inactive" id="sc3">3</div>
+        <div class="step-label" id="sl3">Choose Pattern</div>
+      </div>
+      <div class="step-line" id="line3"></div>
+      <div class="step-item">
+        <div class="step-circle inactive" id="sc4">4</div>
+        <div class="step-label" id="sl4">Preview &amp; Send</div>
+      </div>
+    </div>
+
+    <div class="step-content">
+
+      <!-- ══ Step 1: Upload ══════════════════════════════════════════════════ -->
+      <div class="step-panel active" id="step1">
+        <div class="required-cols-info">
+          <b><i class="fas fa-info-circle" style="color:var(--blue)"></i>&nbsp; Required Excel Columns</b>
+          <code>Name, Gmail id, Role, Joining date, Salary</code> — Extra columns (Phone, Department, etc.) are accepted and stored.
+        </div>
+        <div class="dropzone" id="dropzone"
+             onclick="document.getElementById('fileInput').click()"
+             ondragover="handleDrag(event,true)"
+             ondragleave="handleDrag(event,false)"
+             ondrop="handleDrop(event)">
+          <div class="dropzone-icon"><i class="fas fa-file-excel"></i></div>
+          <p><b>Drop your .xlsx file here</b></p>
+          <span>or click to browse</span>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx" style="display:none" onchange="handleFile(this.files[0])">
+        <div id="uploadResult" style="margin-top:16px"></div>
+        <div class="nav-btns">
+          <button class="btn btn-primary" id="toStep2Btn" style="display:none" onclick="goStep(2)">
+            Next: Employment Type <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ Step 2: Employment Type ═════════════════════════════════════════ -->
+      <div class="step-panel" id="step2">
+        <h3 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy);margin-bottom:4px">Select Employment Type</h3>
+        <p style="color:var(--muted);font-size:.85rem;margin-bottom:20px">Applies to all candidates in this batch</p>
+        <div class="emp-grid">
+          <div class="emp-card selected" onclick="selectEmp('full_time',this)">
+            <i class="fas fa-briefcase" style="color:var(--blue)"></i>
+            <div class="emp-card-title">Full Time</div>
+            <div class="emp-card-sub">Permanent employment with full benefits</div>
+          </div>
+          <div class="emp-card" onclick="selectEmp('part_time',this)">
+            <i class="fas fa-clock" style="color:var(--amber)"></i>
+            <div class="emp-card-title">Part Time</div>
+            <div class="emp-card-sub">Flexible hours, partial benefits</div>
+          </div>
+          <div class="emp-card" onclick="selectEmp('internship',this)">
+            <i class="fas fa-graduation-cap" style="color:var(--teal)"></i>
+            <div class="emp-card-title">Internship</div>
+            <div class="emp-card-sub">Temporary learning opportunity</div>
+          </div>
+        </div>
+        <div class="nav-btns">
+          <button class="btn btn-ghost" onclick="goStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
+          <button class="btn btn-primary" onclick="goStep(3)">Next: Choose Pattern <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- ══ Step 3: Pattern ════════════════════════════════════════════════ -->
+      <div class="step-panel" id="step3">
+        <h3 class="pattern-section-title">Select Offer Letter Pattern</h3>
+        <p class="pattern-section-sub">Each pattern produces a distinctly structured PDF — pick one that fits your company's style</p>
+
+        <!-- Pattern cards rendered by JS from /api/patterns -->
+        <div class="pattern-grid" id="patternGrid">
+          <!-- skeleton -->
+          <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:.85rem">
+            <div style="display:inline-block;width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:10px"></div>
+            <div>Loading templates…</div>
+          </div>
+        </div>
+
+        <!-- Custom text area — shown only when Custom is selected -->
+        <div class="custom-text-block" id="customTextBlock" style="display:none">
+          <label><i class="fas fa-pen"></i>&nbsp; Custom Offer Letter Body</label>
+          <div class="placeholder-tags" style="margin-bottom:12px">
+            <span style="font-size:.75rem;color:#92400e;font-weight:600;align-self:center">Insert:</span>
+            <span class="placeholder-tag" onclick="insertPlaceholder('{name}')">&#123;name&#125;</span>
+            <span class="placeholder-tag" onclick="insertPlaceholder('{role}')">&#123;role&#125;</span>
+            <span class="placeholder-tag" onclick="insertPlaceholder('{company}')">&#123;company&#125;</span>
+            <span class="placeholder-tag" onclick="insertPlaceholder('{joining}')">&#123;joining&#125;</span>
+            <span class="placeholder-tag" onclick="insertPlaceholder('{salary}')">&#123;salary&#125;</span>
+            <span class="placeholder-tag" onclick="insertPlaceholder('{date}')">&#123;date&#125;</span>
+          </div>
+          <textarea id="customText" placeholder="Dear {name},
+
+We are pleased to offer you the position of {role} at {company}.
+
+Your joining date is {joining} and your annual CTC will be ₹{salary}.
+
+This offer is contingent upon successful completion of background verification.
+
+We look forward to welcoming you to our team.
+
+Warm regards,
+HR Department"></textarea>
+          <div class="hint">
+            <i class="fas fa-lightbulb"></i>&nbsp;
+            Use the tag buttons above to insert placeholders — they'll be replaced with each candidate's actual data in the PDF.<br>
+            Write your complete letter body here; it will be rendered directly on the company letterhead.
+          </div>
+        </div>
+
+        <div class="nav-btns">
+          <button class="btn btn-ghost" onclick="goStep(2)"><i class="fas fa-arrow-left"></i> Back</button>
+          <button class="btn btn-primary" onclick="goStep(4)">Preview Letters <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- ══ Step 4: Preview & Send ══════════════════════════════════════════ -->
+      <div class="step-panel" id="step4">
+        <h3 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy);margin-bottom:16px">
+          Preview &amp; Send Offer Letters
+        </h3>
+
+        <!-- Pattern + Employment type summary pill -->
+        <div id="selectionSummary" style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap"></div>
+
+        <div class="preview-layout">
+          <!-- Candidate list -->
+          <div class="preview-cand-list">
+            <h4>Candidates <span id="candCount" style="font-weight:400;color:var(--muted)"></span></h4>
+            <div id="previewCandList">
+              <div style="padding:20px;text-align:center;color:var(--muted);font-size:.82rem">No candidates yet</div>
+            </div>
+          </div>
+
+          <!-- Preview area -->
+          <div class="preview-pane" id="previewPane">
+            <div class="preview-loading">
+              <i class="fas fa-file-alt"></i>
+              Select a candidate on the left to preview their offer letter
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-btns" style="margin-top:20px">
+          <button class="btn btn-ghost" onclick="goStep(3)"><i class="fas fa-arrow-left"></i> Back</button>
+          <button class="btn btn-success" id="sendBtn" onclick="saveAndSend()">
+            <i class="fas fa-paper-plane"></i> Save &amp; Send All Emails
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /step-content -->
+  </div><!-- /upload-main -->
+</div><!-- /upload-layout -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let uploadedCandidates = [];
+let empType     = 'full_time';
+let selPattern  = 'classic';        // default — matches backend PATTERNS dict
+let patternsData = [];              // fetched from /api/patterns
+
+// ── Stepper ───────────────────────────────────────────────────────────────────
+function goStep(n) {
+  [1,2,3,4].forEach(i => {
+    document.getElementById('step'+i).classList.toggle('active', i===n);
+    const sc = document.getElementById('sc'+i);
+    const sl = document.getElementById('sl'+i);
+    const ln = document.getElementById('line'+i);
+    if (i < n) {
+      sc.className = 'step-circle done';
+      sc.innerHTML = '<i class="fas fa-check"></i>';
+      sl.className = 'step-label done';
+      if (ln) ln.classList.add('done');
+    } else if (i === n) {
+      sc.className = 'step-circle active';
+      sc.textContent = i;
+      sl.className = 'step-label active';
+    } else {
+      sc.className = 'step-circle inactive';
+      sc.textContent = i;
+      sl.className = 'step-label';
+    }
+  });
+
+  if (n === 3) loadPatterns();
+  if (n === 4) enterPreviewStep();
+}
+
+// ── Step 1: Upload ────────────────────────────────────────────────────────────
+function handleDrag(e, on) {
+  e.preventDefault();
+  document.getElementById('dropzone').classList.toggle('drag', on);
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropzone').classList.remove('drag');
+  handleFile(e.dataTransfer.files[0]);
+}
+
+async function handleFile(file) {
+  if (!file || !file.name.endsWith('.xlsx')) {
+    showToast('Please select a .xlsx file', 'error');
+    return;
+  }
+  const fd = new FormData();
+  fd.append('file', file);
+  showLoading();
+  const r = await fetch('/api/upload-excel', { method:'POST', body:fd });
+  hideLoading();
+  const d = await r.json();
+  if (!d.success) { showToast(d.message, 'error'); return; }
+
+  uploadedCandidates = d.records;
+  document.getElementById('uploadResult').innerHTML = `
+    <div style="background:#d1fae5;border-radius:8px;padding:14px 18px;display:flex;
+                align-items:center;gap:12px;margin-top:8px">
+      <i class="fas fa-check-circle" style="color:var(--green);font-size:1.3rem"></i>
+      <div>
+        <b style="color:#065f46">${d.records.length} candidate${d.records.length!==1?'s':''} loaded</b><br>
+        <span style="font-size:.8rem;color:#047857">Columns: ${d.columns.join(', ')}</span>
+      </div>
+    </div>`;
+  document.getElementById('toStep2Btn').style.display = 'inline-flex';
+  renderCandSidebar();
+}
+
+function renderCandSidebar() {
+  const c = document.getElementById('candListSidebar');
+  if (!uploadedCandidates.length) {
+    c.innerHTML = '<div style="padding:20px;color:rgba(255,255,255,.3);font-size:.8rem;text-align:center">No candidates</div>';
+    return;
+  }
+  c.innerHTML = uploadedCandidates.map((r,i) => `
+    <div class="cand-item" onclick="sidebarJumpToPreview(${i})">
+      <div class="cand-item-name">${r['Name'] || '—'}</div>
+      <div class="cand-item-role">${r['Role'] || '—'}</div>
+    </div>`).join('');
+}
+
+function sidebarJumpToPreview(idx) {
+  if (!uploadedCandidates.length) return;
+  goStep(4);
+  // After DOM update, click the right candidate row
+  setTimeout(() => {
+    const items = document.querySelectorAll('.preview-cand-item');
+    if (items[idx]) items[idx].click();
+  }, 120);
+}
+
+// ── Step 2: Employment Type ───────────────────────────────────────────────────
+function selectEmp(type, el) {
+  empType = type;
+  document.querySelectorAll('.emp-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── Step 3: Pattern ───────────────────────────────────────────────────────────
+async function loadPatterns() {
+  // Only fetch once
+  if (patternsData.length) { renderPatternCards(); return; }
+  try {
+    const r = await fetch('/api/patterns');
+    patternsData = await r.json();
+  } catch(e) {
+    // Fallback hardcoded list if fetch fails
+    patternsData = [
+      {key:'classic',  label:'Classic',   desc:'Centred header, blue-accented table. Traditional corporate style.', accent:'#0d1b3e', is_custom:false},
+      {key:'modern',   label:'Modern',    desc:'Left-aligned purple header with two-column detail cards.',          accent:'#6d28d9', is_custom:false},
+      {key:'minimal',  label:'Minimal',   desc:'Light grey tones, no heavy borders — ideal for creative roles.',    accent:'#374151', is_custom:false},
+      {key:'executive',label:'Executive', desc:'Dark red, formal letter with reference number & signature block.',  accent:'#7f1d1d', is_custom:false},
+      {key:'custom',   label:'Custom',    desc:'Write your own offer letter content in a text area below.',         accent:'#b45309', is_custom:true},
+    ];
+  }
+  renderPatternCards();
+}
+
+function renderPatternCards() {
+  const grid = document.getElementById('patternGrid');
+  grid.innerHTML = patternsData.map(p => {
+    const isCustom = p.is_custom;
+    const isSelected = p.key === selPattern;
+    return `
+    <div class="pattern-card ${isSelected?'selected':''}"
+         id="pc_${p.key}"
+         onclick="selectPattern('${p.key}')"
+         style="--pat-accent:${p.accent||'#0d1b3e'}">
+      <i class="pattern-check fas fa-check-circle"></i>
+      ${isCustom ? '<span class="pattern-custom-badge"><i class="fas fa-pen" style="font-size:.6rem"></i> Custom</span>' : ''}
+      <div class="pattern-swatch" style="background:${p.accent||'#0d1b3e'}">
+        ${isCustom ? '✏' : p.label.charAt(0)}
+      </div>
+      <h4>${p.label}</h4>
+      <p>${p.desc}</p>
+    </div>`;
+  }).join('');
+
+  // Show/hide custom block for current selection
+  toggleCustomBlock();
+}
+
+function selectPattern(key) {
+  selPattern = key;
+  document.querySelectorAll('.pattern-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('pc_'+key);
+  if (card) card.classList.add('selected');
+  toggleCustomBlock();
+}
+
+function toggleCustomBlock() {
+  const block = document.getElementById('customTextBlock');
+  if (!block) return;
+  if (selPattern === 'custom') {
+    block.style.display = 'block';
+    // Smooth scroll to it
+    setTimeout(() => block.scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
+  } else {
+    block.style.display = 'none';
+  }
+}
+
+// Insert placeholder at cursor position in custom textarea
+function insertPlaceholder(tag) {
+  const ta = document.getElementById('customText');
+  const start = ta.selectionStart;
+  const end   = ta.selectionEnd;
+  const val   = ta.value;
+  ta.value = val.substring(0,start) + tag + val.substring(end);
+  ta.selectionStart = ta.selectionEnd = start + tag.length;
+  ta.focus();
+}
+
+// ── Step 4: Preview & Send ────────────────────────────────────────────────────
+function enterPreviewStep() {
+  // Summary pills
+  const patObj = patternsData.find(p => p.key===selPattern) || {label:'Classic', accent:'#0d1b3e'};
+  const empLabel = {full_time:'Full Time', part_time:'Part Time', internship:'Internship'}[empType] || empType;
+  document.getElementById('selectionSummary').innerHTML = `
+    <span style="display:inline-flex;align-items:center;gap:6px;background:#f0f4ff;
+                 color:var(--blue);padding:5px 12px;border-radius:20px;font-size:.8rem;font-weight:600">
+      <i class="fas fa-layer-group"></i> ${patObj.label} Pattern
+    </span>
+    <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;
+                 color:var(--green);padding:5px 12px;border-radius:20px;font-size:.8rem;font-weight:600">
+      <i class="fas fa-briefcase"></i> ${empLabel}
+    </span>
+    <span style="display:inline-flex;align-items:center;gap:6px;background:#fafafa;
+                 color:var(--muted);padding:5px 12px;border-radius:20px;font-size:.8rem;font-weight:600">
+      <i class="fas fa-users"></i> ${uploadedCandidates.length} candidate${uploadedCandidates.length!==1?'s':''}
+    </span>`;
+
+  // Candidate count badge
+  document.getElementById('candCount').textContent = `(${uploadedCandidates.length})`;
+
+  // Render candidate list
+  const list = document.getElementById('previewCandList');
+  list.innerHTML = uploadedCandidates.map((r,i) => `
+    <div class="preview-cand-item" id="pci_${i}" onclick="previewLetter(${i})">
+      ${r['Name'] || '—'}
+    </div>`).join('');
+
+  // Auto-preview first candidate
+  if (uploadedCandidates.length) {
+    setTimeout(() => previewLetter(0), 80);
+  }
+}
+
+async function previewLetter(idx) {
+  // Highlight active row
+  document.querySelectorAll('.preview-cand-item').forEach(c => c.classList.remove('active'));
+  const activeEl = document.getElementById('pci_'+idx);
+  if (activeEl) activeEl.classList.add('active');
+
+  const c = uploadedCandidates[idx];
+  const pane = document.getElementById('previewPane');
+
+  // Show spinner
+  pane.innerHTML = `
+    <div class="preview-loading">
+      <div class="preview-spinner"></div>
+      <div>Generating preview…</div>
+    </div>`;
+
+  try {
+    const payload = {
+      candidate:       { ...c, name: c['Name']||'', email: c['Gmail id']||'',
+                         role: c['Role']||'', joining_date: c['Joining date']||'',
+                         salary: c['Salary']||'' },
+      employment_type: empType,
+      pattern:         selPattern,
+      custom_text:     getCustomText(),
+    };
+
+    const r = await fetch('/api/preview-letter', {
+      method:  'POST',
+      headers: {'Content-Type':'application/json'},
+      body:    JSON.stringify(payload),
+    });
+    const d = await r.json();
+
+    if (d.success && d.html) {
+      pane.innerHTML = d.html;
+    } else {
+      pane.innerHTML = '<div style="color:red;padding:20px">Preview failed. Please try again.</div>';
+    }
+  } catch(e) {
+    pane.innerHTML = '<div style="color:red;padding:20px">Network error loading preview.</div>';
+  }
+}
+
+function getCustomText() {
+  if (selPattern !== 'custom') return '';
+  return document.getElementById('customText').value || '';
+}
+
+// ── Save & Send ───────────────────────────────────────────────────────────────
+async function saveAndSend() {
+  if (!uploadedCandidates.length) { showToast('No candidates loaded', 'error'); return; }
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+  showLoading();
+
+  // 1. Save candidates (with pattern + custom_text)
+  const saveRes = await fetch('/api/save-candidates', {
+    method:  'POST',
+    headers: {'Content-Type':'application/json'},
+    body:    JSON.stringify({
+      candidates:      uploadedCandidates,
+      employment_type: empType,
+      pattern:         selPattern,
+      custom_text:     getCustomText(),
+    }),
+  });
+  const saveData = await saveRes.json();
+
+  if (!saveData.success) {
+    hideLoading();
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Save & Send All Emails';
+    showToast('Error saving candidates', 'error');
+    return;
+  }
+
+  // 2. Send emails using the IDs returned from save
+  const candidateIds = saveData.candidate_ids || [];
+  if (!candidateIds.length) {
+    hideLoading();
+    showToast('No new candidates to send', 'warning');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Save & Send All Emails';
+    return;
+  }
+
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending emails…';
+
+  const sendRes = await fetch('/api/send-offer-emails', {
+    method:  'POST',
+    headers: {'Content-Type':'application/json'},
+    body:    JSON.stringify({ candidate_ids: candidateIds }),
+  });
+  const sendData = await sendRes.json();
+  hideLoading();
+
+  if (sendData.success) {
+    showToast(`✅ Offer emails sent to ${sendData.sent} candidate${sendData.sent!==1?'s':''}!`);
+    setTimeout(() => location.href = '/dashboard', 1800);
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Save & Send All Emails';
+    showToast('Error sending emails', 'error');
+  }
+}
+</script>
+{% endblock %}

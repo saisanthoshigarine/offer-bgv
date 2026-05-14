@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verification Response — OfferFlow</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:{% if action=='verify' %}linear-gradient(135deg,#f0fdf4,#dcfce7){% else %}linear-gradient(135deg,#fff1f2,#fee2e2){% endif %}}
+.card{background:#fff;border-radius:20px;padding:56px 48px;max-width:480px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.08)}
+.icon{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:2rem;color:#fff;background:{% if action=='verify' %}linear-gradient(135deg,#10b981,#059669){% else %}linear-gradient(135deg,#ef4444,#dc2626){% endif %}}
+h1{font-family:'DM Serif Display',serif;font-size:2rem;color:{% if action=='verify' %}#065f46{% else %}#991b1b{% endif %};margin-bottom:12px}
+p{color:#64748b;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">{% if action=='verify' %}✓{% else %}✕{% endif %}</div>
+  <h1>{% if action=='verify' %}Verification Confirmed{% else %}Verification Rejected{% endif %}</h1>
+  <p>Thank you for your response regarding <b>{{ candidate.name }}</b>. The candidate's dashboard has been updated and they have been notified.</p>
+  <p style="margin-top:16px;font-size:.85rem;color:#94a3b8">You may now close this window.</p>
+</div>
+</body></html>

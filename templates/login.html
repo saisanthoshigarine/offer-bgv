@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% block title %}Login — OfferFlow{% endblock %}
+{% block head %}
+<style>
+.auth-wrap{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;background:#fff}
+@media(max-width:768px){.auth-wrap{grid-template-columns:1fr}.auth-visual{display:none!important}}
+.auth-visual{background:linear-gradient(135deg,#0d1b3e 0%,#1a3a7a 55%,#0ea5e9 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;position:relative;overflow:hidden}
+.auth-visual::before{content:'';position:absolute;width:400px;height:400px;border-radius:50%;border:60px solid rgba(255,255,255,.06);top:-100px;right:-100px}
+.auth-visual::after{content:'';position:absolute;width:300px;height:300px;border-radius:50%;border:40px solid rgba(255,255,255,.04);bottom:-80px;left:-80px}
+.auth-visual-content{position:relative;z-index:2;text-align:center;color:#fff}
+.auth-logo{font-family:'DM Serif Display',serif;font-size:2.4rem;margin-bottom:8px}
+.auth-logo-icon{width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--teal),var(--blue-l));display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:1.8rem}
+.auth-tagline{color:rgba(255,255,255,.7);font-size:1rem;max-width:300px;line-height:1.6;margin-top:12px}
+.auth-features{margin-top:48px;display:flex;flex-direction:column;gap:16px;text-align:left;width:100%;max-width:320px}
+.auth-feat{display:flex;align-items:center;gap:14px;color:rgba(255,255,255,.85);font-size:.9rem}
+.auth-feat-icon{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+.auth-form-wrap{display:flex;align-items:center;justify-content:center;padding:48px 40px;background:var(--bg)}
+.auth-form-box{width:100%;max-width:420px}
+.auth-form-box h2{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--navy);margin-bottom:6px}
+.auth-form-box p{color:var(--muted);font-size:.9rem;margin-bottom:32px}
+
+.auth-links{display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:.85rem}
+.auth-link{color:var(--blue);font-weight:600;cursor:pointer}.auth-link:hover{text-decoration:underline}
+
+.divider{display:flex;align-items:center;gap:12px;margin:24px 0;color:var(--muted);font-size:.85rem}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(13,27,62,.5);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:480px;position:relative;max-height:90vh;overflow-y:auto}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted);width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.modal-close:hover{background:var(--bg)}
+
+.password-wrap{position:relative}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:1rem;padding:4px}
+
+.pw-hint{background:#f0f4ff;border-radius:8px;padding:12px 14px;margin-top:8px;font-size:.8rem;color:var(--muted)}
+.pw-hint li{margin-left:16px;line-height:1.8}
+.pw-req{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);margin-top:6px}
+.pw-req.met{color:var(--green)}.pw-req.unmet{color:var(--red)}
+</style>
+{% endblock %}
+{% block body %}
+<div class="auth-wrap">
+  <!-- Left visual -->
+  <div class="auth-visual">
+    <div class="auth-visual-content">
+      <div class="auth-logo-icon"><i class="fas fa-file-contract" style="color:#fff;font-size:1.6rem"></i></div>
+      <div class="auth-logo">OfferFlow</div>
+      <p class="auth-tagline">Your complete platform for offer letters and background verification</p>
+      <div class="auth-features">
+        <div class="auth-feat"><div class="auth-feat-icon"><i class="fas fa-bolt" style="color:var(--gold)"></i></div>Send offers in minutes, not hours</div>
+        <div class="auth-feat"><div class="auth-feat-icon"><i class="fas fa-shield-alt" style="color:var(--teal)"></i></div>Automated background verification</div>
+        <div class="auth-feat"><div class="auth-feat-icon"><i class="fas fa-chart-bar" style="color:#a78bfa"></i></div>Real-time hiring analytics</div>
+        <div class="auth-feat"><div class="auth-feat-icon"><i class="fas fa-clock" style="color:var(--green)"></i></div>48-hour auto-expiry system</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right form -->
+  <div class="auth-form-wrap">
+    <div class="auth-form-box">
+      <h2>Welcome back</h2>
+      <p>Sign in to your OfferFlow account</p>
+
+      <div class="form-group">
+        <label>Username</label>
+        <input class="form-control" id="loginUser" type="text" placeholder="Enter your username" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="password-wrap">
+          <input class="form-control" id="loginPass" type="password" placeholder="Enter your password" autocomplete="current-password">
+          <button class="pw-toggle" onclick="togglePw('loginPass',this)"><i class="fas fa-eye"></i></button>
+        </div>
+      </div>
+      <div id="loginError" style="color:var(--red);font-size:.85rem;margin-bottom:12px;display:none"></div>
+
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px" onclick="doLogin()">
+        <i class="fas fa-sign-in-alt"></i> Sign In
+      </button>
+
+      <div class="auth-links" style="margin-top:20px">
+        <span class="auth-link" onclick="showModal('registerModal')">Don't have an account? Register</span>
+        <span class="auth-link" onclick="showModal('forgotModal')">Forgot Password?</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal-overlay" id="registerModal">
+  <div class="modal">
+    <button class="modal-close" onclick="hideModal('registerModal')"><i class="fas fa-times"></i></button>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--navy);margin-bottom:4px">Create Account</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:24px">All fields are required</p>
+
+    <div class="form-group">
+      <label>Username</label>
+      <input class="form-control" id="regUser" type="text" placeholder="Choose a username">
+    </div>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input class="form-control" id="regEmail" type="email" placeholder="your@email.com">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div class="password-wrap">
+        <input class="form-control" id="regPass" type="password" placeholder="Create a strong password" oninput="checkPwStrength()">
+        <button class="pw-toggle" onclick="togglePw('regPass',this)"><i class="fas fa-eye"></i></button>
+      </div>
+      <div id="pwReqs" style="margin-top:8px">
+        <div class="pw-req" id="req-len"><i class="fas fa-circle" style="font-size:.5rem"></i> At least 8 characters</div>
+        <div class="pw-req" id="req-upper"><i class="fas fa-circle" style="font-size:.5rem"></i> One uppercase letter</div>
+        <div class="pw-req" id="req-lower"><i class="fas fa-circle" style="font-size:.5rem"></i> One lowercase letter</div>
+        <div class="pw-req" id="req-special"><i class="fas fa-circle" style="font-size:.5rem"></i> One special character</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Confirm Password</label>
+      <div class="password-wrap">
+        <input class="form-control" id="regConfirm" type="password" placeholder="Repeat your password">
+        <button class="pw-toggle" onclick="togglePw('regConfirm',this)"><i class="fas fa-eye"></i></button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Company Name</label>
+      <input class="form-control" id="regCompany" type="text" placeholder="Your company name">
+    </div>
+    <div class="form-group">
+      <label>Company Letterhead <span style="color:var(--muted);font-weight:400;font-size:.8rem">(PDF only)</span></label>
+      <input class="form-control" id="regLetterhead" type="file" accept=".pdf" style="padding:8px">
+    </div>
+    <div id="regError" style="color:var(--red);font-size:.85rem;margin-bottom:12px;display:none"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px" onclick="doRegister()">
+      <i class="fas fa-user-plus"></i> Create Account
+    </button>
+  </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="modal-overlay" id="forgotModal">
+  <div class="modal" style="max-width:400px">
+    <button class="modal-close" onclick="hideModal('forgotModal')"><i class="fas fa-times"></i></button>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--navy);margin-bottom:4px">Reset Password</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:24px">Enter your registered email and we'll send you a reset link</p>
+    <div class="form-group">
+      <label>Registered Email</label>
+      <input class="form-control" id="forgotEmail" type="email" placeholder="your@email.com">
+    </div>
+    <div id="forgotMsg" style="font-size:.85rem;margin-bottom:12px;display:none"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px" onclick="doForgot()">
+      <i class="fas fa-paper-plane"></i> Send Reset Link
+    </button>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function showModal(id){document.getElementById(id).classList.add('open')}
+function hideModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}))
+
+function togglePw(id,btn){
+  const inp=document.getElementById(id);
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.innerHTML=show?'<i class="fas fa-eye-slash"></i>':'<i class="fas fa-eye"></i>';
+}
+
+function checkPwStrength(){
+  const pw=document.getElementById('regPass').value;
+  const check=(id,cond)=>{
+    const el=document.getElementById(id);
+    el.className='pw-req '+(cond?'met':'unmet');
+    el.querySelector('i').className='fas '+(cond?'fa-check-circle':'fa-times-circle')+' '+(cond?'':'');
+  };
+  check('req-len',pw.length>=8);
+  check('req-upper',/[A-Z]/.test(pw));
+  check('req-lower',/[a-z]/.test(pw));
+  check('req-special',/[^A-Za-z0-9]/.test(pw));
+}
+
+async function doLogin(){
+  const username=document.getElementById('loginUser').value.trim();
+  const password=document.getElementById('loginPass').value;
+  const errEl=document.getElementById('loginError');
+  errEl.style.display='none';
+  if(!username||!password){errEl.textContent='Please fill all fields';errEl.style.display='block';return}
+  showLoading();
+  const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+  hideLoading();
+  const d=await r.json();
+  if(d.success){showToast('Login successful!');setTimeout(()=>location.href='/dashboard',600)}
+  else{errEl.textContent=d.message||'Invalid credentials';errEl.style.display='block'}
+}
+
+async function doRegister(){
+  const errEl=document.getElementById('regError');errEl.style.display='none';
+  const fd=new FormData();
+  fd.append('username',document.getElementById('regUser').value.trim());
+  fd.append('email',document.getElementById('regEmail').value.trim());
+  fd.append('password',document.getElementById('regPass').value);
+  fd.append('confirm_password',document.getElementById('regConfirm').value);
+  fd.append('company_name',document.getElementById('regCompany').value.trim());
+  const lh=document.getElementById('regLetterhead').files[0];
+  if(lh) fd.append('letterhead',lh);
+  showLoading();
+  const r=await fetch('/api/register',{method:'POST',body:fd});
+  hideLoading();
+  const d=await r.json();
+  if(d.success){showToast('Account created! Please login.');hideModal('registerModal')}
+  else{errEl.textContent=d.message;errEl.style.display='block'}
+}
+
+async function doForgot(){
+  const email=document.getElementById('forgotEmail').value.trim();
+  const msgEl=document.getElementById('forgotMsg');
+  showLoading();
+  const r=await fetch('/api/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+  hideLoading();
+  const d=await r.json();
+  msgEl.style.display='block';
+  if(d.success){msgEl.style.color='var(--green)';msgEl.textContent='Reset link sent! Check your inbox.'}
+  else{msgEl.style.color='var(--red)';msgEl.textContent=d.message}
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()})
+</script>
+{% endblock %}

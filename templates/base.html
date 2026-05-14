@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}OfferFlow{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root {
+    --navy:   #0d1b3e;
+    --blue:   #1a56db;
+    --blue-l: #3b82f6;
+    --teal:   #0ea5e9;
+    --gold:   #f59e0b;
+    --green:  #10b981;
+    --red:    #ef4444;
+    --amber:  #f97316;
+    --bg:     #f0f4fa;
+    --surface:#ffffff;
+    --border: #e2e8f0;
+    --text:   #1e293b;
+    --muted:  #64748b;
+    --sidebar-w: 260px;
+    --radius: 14px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+  h1,h2,h3,h4{font-family:'DM Serif Display',serif;line-height:1.2}
+  a{color:inherit;text-decoration:none}
+  input,select,textarea{font-family:'DM Sans',sans-serif}
+
+  /* ── Buttons ── */
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:8px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;font-size:0.9rem;transition:all .2s;white-space:nowrap}
+  .btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1248c0;transform:translateY(-1px)}
+  .btn-success{background:var(--green);color:#fff}.btn-success:hover{background:#059669}
+  .btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#dc2626}
+  .btn-ghost{background:transparent;color:var(--blue);border:2px solid var(--blue)}.btn-ghost:hover{background:var(--blue);color:#fff}
+  .btn-sm{padding:6px 14px;font-size:0.8rem}
+  .btn-lg{padding:14px 32px;font-size:1rem;border-radius:10px}
+
+  /* ── Cards ── */
+  .card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+
+  /* ── Form Controls ── */
+  .form-group{margin-bottom:18px}
+  .form-group label{display:block;font-weight:600;font-size:0.85rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+  .form-control{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:0.95rem;background:#fff;color:var(--text);transition:border-color .2s,box-shadow .2s;outline:none}
+  .form-control:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.12)}
+  .form-control.error{border-color:var(--red)}
+  .error-msg{color:var(--red);font-size:0.8rem;margin-top:4px}
+
+  /* ── Toast ── */
+  #toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px}
+  .toast{padding:12px 20px;border-radius:10px;color:#fff;font-weight:600;font-size:0.9rem;box-shadow:0 4px 20px rgba(0,0,0,.2);animation:slideIn .3s ease;display:flex;align-items:center;gap:10px;min-width:280px}
+  .toast-success{background:var(--green)}.toast-error{background:var(--red)}.toast-info{background:var(--blue)}
+  @keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+  /* ── Loading overlay ── */
+  #loading{position:fixed;inset:0;background:rgba(13,27,62,.6);z-index:9998;display:none;align-items:center;justify-content:center}
+  .spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ── Badge ── */
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  .badge-green{background:#d1fae5;color:#065f46}.badge-red{background:#fee2e2;color:#991b1b}
+  .badge-amber{background:#fef3c7;color:#92400e}.badge-blue{background:#dbeafe;color:#1e40af}
+  .badge-gray{background:#f1f5f9;color:#475569}
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+<div id="loading"><div class="spinner"></div></div>
+<div id="toast-container"></div>
+
+{% block body %}{% endblock %}
+
+<script>
+function showToast(msg, type='success'){
+  const c=document.getElementById('toast-container');
+  const icons={success:'fa-check-circle',error:'fa-times-circle',info:'fa-info-circle'};
+  const t=document.createElement('div');
+  t.className=`toast toast-${type}`;
+  t.innerHTML=`<i class="fas ${icons[type]}"></i>${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.animation='slideIn .3s ease reverse';setTimeout(()=>t.remove(),300)},3500);
+}
+function showLoading(){document.getElementById('loading').style.display='flex'}
+function hideLoading(){document.getElementById('loading').style.display='none'}
+async function apiFetch(url,opts={}){
+  showLoading();
+  try{
+    const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});
+    const d=await r.json();
+    hideLoading();
+    return d;
+  }catch(e){hideLoading();throw e}
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
