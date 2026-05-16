@@ -224,5 +224,126 @@
       "Status": "Selected "
     },
     "email_sent_at": "2026-05-14 12:11:19.255502"
+  },
+  "64db3589-1db1-4709-b83a-3fb7e750ef7c": {
+    "id": "64db3589-1db1-4709-b83a-3fb7e750ef7c",
+    "hr_id": "87bd344c-19d6-4077-b567-9389a6d70b62",
+    "name": "Y.Rishitha Reddy",
+    "email": "yrishithareddy72@gmail.com",
+    "role": "Android Developer",
+    "joining_date": "Sat, 31 Jan 2026 00:00:00 GMT",
+    "salary": "10000",
+    "employment_type": "internship",
+    "pattern": "minimal",
+    "custom_text": "",
+    "offer_status": "pending",
+    "sent_at": "2026-05-15 09:04:14.690634",
+    "extra": {
+      "Status": "Selected",
+      "Unnamed: 5": "",
+      "Unnamed: 6": ""
+    },
+    "email_sent_at": "2026-05-15 09:04:15.363175"
+  },
+  "7ff04448-27f4-4a8c-a47c-7c04ec5741ef": {
+    "id": "7ff04448-27f4-4a8c-a47c-7c04ec5741ef",
+    "hr_id": "87bd344c-19d6-4077-b567-9389a6d70b62",
+    "name": "Y.Rishitha Reddy",
+    "email": "yrishithareddy72@gmail.com",
+    "role": "Android Developer",
+    "joining_date": "Sat, 31 Jan 2026 00:00:00 GMT",
+    "salary": "10000",
+    "employment_type": "internship",
+    "pattern": "executive",
+    "custom_text": "",
+    "offer_status": "cancelled",
+    "sent_at": "2026-05-15 09:12:44.706029",
+    "extra": {
+      "Status": "Selected",
+      "Unnamed: 5": "",
+      "Unnamed: 6": ""
+    },
+    "email_sent_at": "2026-05-15 09:12:45.125557",
+    "cancelled_at": "2026-05-16 06:54:30.593552"
+  },
+  "ab671bc2-5df8-43ce-9125-38edcf531dd8": {
+    "id": "ab671bc2-5df8-43ce-9125-38edcf531dd8",
+    "hr_id": "87bd344c-19d6-4077-b567-9389a6d70b62",
+    "name": "Y.Rishitha Reddy",
+    "email": "yrishithareddy72@gmail.com",
+    "role": "Android Developer",
+    "joining_date": "Sat, 31 Jan 2026 00:00:00 GMT",
+    "salary": "10000",
+    "employment_type": "internship",
+    "pattern": "executive",
+    "custom_text": "",
+    "offer_status": "pending",
+    "sent_at": "2026-05-15 09:15:30.905303",
+    "extra": {
+      "Status": "Selected",
+      "Unnamed: 5": "",
+      "Unnamed: 6": ""
+    },
+    "email_sent_at": "2026-05-15 09:15:30.985193"
+  },
+  "064b996d-aa52-4e44-b18f-a4054a749807": {
+    "id": "064b996d-aa52-4e44-b18f-a4054a749807",
+    "hr_id": "87bd344c-19d6-4077-b567-9389a6d70b62",
+    "name": "Y.Rishitha Reddy",
+    "email": "yrishithareddy72@gmail.com",
+    "role": "Android Developer",
+    "joining_date": "Sat, 31 Jan 2026 00:00:00 GMT",
+    "salary": "10000",
+    "employment_type": "internship",
+    "pattern": "minimal",
+    "custom_text": "",
+    "offer_status": "accepted",
+    "sent_at": "2026-05-15 09:26:09.400986",
+    "extra": {
+      "Status": "Selected",
+      "Unnamed: 5": "",
+      "Unnamed: 6": ""
+    },
+    "email_sent_at": "2026-05-15 09:26:09.839787",
+    "responded_at": "2026-05-15 09:26:48.596961"
+  },
+  "e6c0831a-a9d9-44e0-837a-44a156f1d4ec": {
+    "id": "e6c0831a-a9d9-44e0-837a-44a156f1d4ec",
+    "hr_id": "87bd344c-19d6-4077-b567-9389a6d70b62",
+    "name": "Y.Rishitha Reddy",
+    "email": "yrishithareddy72@gmail.com",
+    "role": "Android Developer",
+    "joining_date": "Sat, 31 Jan 2026 00:00:00 GMT",
+    "salary": "10000",
+    "employment_type": "internship",
+    "pattern": "minimal",
+    "custom_text": "",
+    "offer_status": "accepted",
+    "sent_at": "2026-05-15 09:42:25.512390",
+    "extra": {
+      "Status": "Selected",
+      "Unnamed: 5": "",
+      "Unnamed: 6": ""
+    },
+    "email_sent_at": "2026-05-15 09:42:25.970299",
+    "responded_at": "2026-05-15 09:42:41.427991"
+  },
+  "c712456e-4ae2-45e0-839f-ebee101c4b78": {
+    "id": "c712456e-4ae2-45e0-839f-ebee101c4b78",
+    "hr_id": "3d6baef9-f83b-4b72-af4a-c4aaa50139a8",
+    "name": "Sai Santhoshi ",
+    "email": "saisanthoshig.10@gmail.com",
+    "role": "AI Engineer ",
+    "joining_date": "Sat, 31 Jan 2026 00:00:00 GMT",
+    "salary": "100000",
+    "employment_type": "internship",
+    "pattern": "minimal",
+    "custom_text": "",
+    "offer_status": "pending",
+    "sent_at": "2026-05-16 15:54:08.255262",
+    "extra": {
+      "Status": "Selected "
+    },
+    "email_sent_at": "2026-05-16 15:54:14.055058"
   }
 }

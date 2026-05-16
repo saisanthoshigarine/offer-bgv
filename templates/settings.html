@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings - OfferFlow{% endblock %}
+
+{% block body %}
+<style>
+.settings-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+.settings-header {
+  margin-bottom: 30px;
+}
+.settings-header h1 {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+.settings-header p {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.settings-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 30px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.settings-card h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.current-plan {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-l));
+  border-radius: 12px;
+  color: #fff;
+  margin-bottom: 16px;
+}
+.current-plan .plan-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+.current-plan .plan-badge {
+  background: rgba(255,255,255,0.2);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.letterhead-preview {
+  width: 100%;
+  height: 120px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  margin-top: 12px;
+  background: var(--bg);
+}
+.letterhead-preview.has-file {
+  border-style: solid;
+  border-color: var(--green);
+  background: #f0fdf4;
+  color: var(--green);
+}
+</style>
+
+<div class="settings-container">
+  <div class="settings-header">
+    <h1>Account Settings</h1>
+    <p>Manage your account information and preferences</p>
+  </div>
+
+  <!-- Subscription Info -->
+  <div class="settings-card">
+    <h2>Subscription</h2>
+    <div class="current-plan">
+      <span class="plan-name">Current Plan: <span id="currentTier">Loading...</span></span>
+      <span class="plan-badge" id="planBadge">FREE</span>
+    </div>
+    <p style="color: var(--muted); margin-bottom: 16px;">
+      You're on the <strong id="tierName">Free</strong> plan. 
+      <span id="tierLimits">10 offers/month, 5 verifications/month</span>
+    </p>
+    <button class="btn btn-primary" onclick="location.href='/pricing'">
+      <i class="fas fa-crown"></i> Upgrade Plan
+    </button>
+  </div>
+
+  <!-- Profile Information -->
+  <div class="settings-card">
+    <h2>Profile Information</h2>
+    <form id="profileForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" class="form-control" id="username" readonly>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" class="form-control" id="email" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Company Name</label>
+        <input type="text" class="form-control" id="companyName" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Update Profile</button>
+    </form>
+  </div>
+
+  <!-- Change Password -->
+  <div class="settings-card">
+    <h2>Change Password</h2>
+    <form id="passwordForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Current Password</label>
+          <input type="password" class="form-control" id="currentPassword" required>
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" class="form-control" id="newPassword" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Confirm New Password</label>
+        <input type="password" class="form-control" id="confirmPassword" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Change Password</button>
+    </form>
+  </div>
+
+  <!-- Letterhead -->
+  <div class="settings-card">
+    <h2>Company Letterhead</h2>
+    <p style="color: var(--muted); margin-bottom: 16px;">
+      Upload your company letterhead PDF to appear on offer letters.
+    </p>
+    <div class="form-group">
+      <label>Current Letterhead</label>
+      <div class="letterhead-preview" id="letterheadPreview">
+        <span id="letterheadStatus">No letterhead uploaded</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Upload New Letterhead (PDF, max 5MB)</label>
+      <input type="file" class="form-control" id="letterheadFile" accept=".pdf">
+    </div>
+    <button class="btn btn-primary" onclick="uploadLetterhead()">
+      <i class="fas fa-upload"></i> Upload Letterhead
+    </button>
+  </div>
+</div>
+
+<script>
+async function loadSettings() {
+  const res = await apiFetch('/api/settings');
+  if (res.success) {
+    document.getElementById('username').value = res.user.username;
+    document.getElementById('email').value = res.user.email;
+    document.getElementById('companyName').value = res.user.company_name;
+    
+    const tier = res.user.subscription?.tier || 'free';
+    const tierConfig = {
+      free: { name: 'Free', limits: '10 offers/month, 5 verifications/month' },
+      starter: { name: 'Starter', limits: '50 offers/month, 25 verifications/month' },
+      professional: { name: 'Professional', limits: '200 offers/month, 100 verifications/month' },
+      enterprise: { name: 'Enterprise', limits: 'Unlimited' }
+    };
+    const config = tierConfig[tier] || tierConfig.free;
+    document.getElementById('currentTier').textContent = config.name;
+    document.getElementById('planBadge').textContent = tier.toUpperCase();
+    document.getElementById('tierName').textContent = config.name;
+    document.getElementById('tierLimits').textContent = config.limits;
+    
+    if (res.user.letterhead) {
+      document.getElementById('letterheadPreview').classList.add('has-file');
+      document.getElementById('letterheadStatus').textContent = 'Letterhead uploaded';
+    }
+  }
+}
+
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const res = await apiFetch('/api/update-profile', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: document.getElementById('email').value,
+      company_name: document.getElementById('companyName').value
+    })
+  });
+  if (res.success) {
+    showToast('Profile updated successfully');
+  } else {
+    showToast(res.message || 'Update failed', 'error');
+  }
+});
+
+document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const current = document.getElementById('currentPassword').value;
+  const newPass = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  
+  if (newPass !== confirm) {
+    showToast('Passwords do not match', 'error');
+    return;
+  }
+  if (newPass.length < 8) {
+    showToast('Password must be at least 8 characters', 'error');
+    return;
+  }
+  
+  const res = await apiFetch('/api/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ current_password: current, new_password: newPass })
+  });
+  if (res.success) {
+    showToast('Password changed successfully');
+    document.getElementById('passwordForm').reset();
+  } else {
+    showToast(res.message || 'Password change failed', 'error');
+  }
+});
+
+async function uploadLetterhead() {
+  const fileInput = document.getElementById('letterheadFile');
+  if (!fileInput.files[0]) {
+    showToast('Please select a file', 'error');
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('letterhead', fileInput.files[0]);
+  
+  showLoading();
+  try {
+    const res = await fetch('/api/update-letterhead', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    hideLoading();
+    if (data.success) {
+      showToast('Letterhead updated successfully');
+      document.getElementById('letterheadPreview').classList.add('has-file');
+      document.getElementById('letterheadStatus').textContent = 'Letterhead uploaded';
+    } else {
+      showToast(data.message || 'Upload failed', 'error');
+    }
+  } catch (e) {
+    hideLoading();
+    showToast('Upload failed', 'error');
+  }
+}
+
+loadSettings();
+</script>
+{% endblock %}

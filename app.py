@@ -1,5 +1,9 @@
-import os, io, json, uuid, base64, hashlib, re, threading
+import os, io, json, uuid, base64, hashlib, re, threading, shutil, logging
 from datetime import datetime, timedelta
+
+# ── Load .env FIRST before any os.environ.get() calls ────────────────────────
+from dotenv import load_dotenv
+load_dotenv()
 
 import pandas as pd
 from flask import (Flask, request, jsonify, session, redirect,
@@ -20,21 +24,198 @@ from reportlab.pdfgen import canvas as rlc
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 
+# Stripe / payments
+import stripe
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# ── Validation Helpers ─────────────────────────────────────────────────────────
+def validate_email(email):
+    """Validate email format"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+def validate_required_fields(data, required_fields):
+    """Check if all required fields are present and non-empty"""
+    missing = [field for field in required_fields if not data.get(field, '').strip()]
+    return missing
+
+def validate_file_size(file, max_size_mb=5):
+    """Validate file size limit"""
+    if file:
+        file.seek(0, os.SEEK_END)
+        size = file.tell()
+        file.seek(0)
+        return size <= max_size_mb * 1024 * 1024
+    return False
+
+def sanitize_string(s):
+    """Sanitize string input"""
+    if not s:
+        return ''
+    return re.sub(r'[<>"\']', '', str(s).strip())
 
 BASE_URL      = os.environ.get('BASE_URL', 'http://localhost:5000')
 BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
 SENDER_EMAIL  = os.environ.get('SENDER_EMAIL')
 SENDER_NAME   = os.environ.get('SENDER_NAME')
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+
+# Configure Stripe
+stripe.api_key = STRIPE_SECRET_KEY
+
+# ── Subscription Tiers Configuration ────────────────────────────────────────────
+SUBSCRIPTION_TIERS = {
+    'free': {
+        'name': 'Free',
+        'price': 0,
+        'currency': 'INR',
+        'offers_per_month': 10,
+        'verifications_per_month': 5,
+        'hr_users_limit': 1,
+        'features': ['Basic offer letters', 'Email notifications', '5 background verifications/month']
+    },
+    'starter': {
+        'name': 'Starter',
+        'price': 1999,
+        'currency': 'INR',
+        'stripe_price_id': 'price_starter_id',  # Will be set after creating in Stripe
+        'offers_per_month': 50,
+        'verifications_per_month': 25,
+        'hr_users_limit': 3,
+        'features': ['50 offer letters/month', '25 background verifications/month', '3 HR users', 'Priority support', 'Custom letterhead']
+    },
+    'professional': {
+        'name': 'Professional',
+        'price': 4999,
+        'currency': 'INR',
+        'stripe_price_id': 'price_professional_id',
+        'offers_per_month': 200,
+        'verifications_per_month': 100,
+        'hr_users_limit': 10,
+        'features': ['200 offer letters/month', '100 background verifications/month', '10 HR users', 'Priority support', 'Custom letterhead', 'Advanced analytics']
+    },
+    'enterprise': {
+        'name': 'Enterprise',
+        'price': 0,  # Custom pricing
+        'currency': 'INR',
+        'offers_per_month': -1,  # Unlimited
+        'verifications_per_month': -1,
+        'hr_users_limit': -1,
+        'features': ['Unlimited everything', 'Unlimited HR users', 'Dedicated support', 'API access', 'Custom integrations', 'White-label option']
+    }
+}
 
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = "/tmp/uploads"
-DATA_DIR   = "/tmp/data"
-LETTER_DIR = "/tmp/generated_letters"
+
+# ── Use /tmp on Vercel (read-only FS), local dirs otherwise ──────────────────
+IS_VERCEL  = bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'))
+UPLOAD_DIR = "/tmp/uploads"      if IS_VERCEL else os.path.join(BASE_DIR, 'uploads')
+DATA_DIR   = "/tmp/data"         if IS_VERCEL else os.path.join(BASE_DIR, 'data')
+LETTER_DIR = "/tmp/generated_letters" if IS_VERCEL else os.path.join(BASE_DIR, 'generated_letters')
+
 for d in [UPLOAD_DIR+'/letterheads', UPLOAD_DIR+'/excel',
           UPLOAD_DIR+'/documents', DATA_DIR, LETTER_DIR]:
     os.makedirs(d, exist_ok=True)
+
+
+# ── Letterhead path resolver ──────────────────────────────────────────────────
+def _resolve_lh_path(stored: str) -> str:
+    """
+    Accepts any of:
+      - already-correct absolute path
+      - Windows absolute path  (C:\\Users\\...)
+      - relative path with backslashes  (uploads\\letterheads\\file.pdf)
+      - relative path with forward slashes
+    Returns the real path on the current machine, or '' if not found.
+    """
+    if not stored:
+        return ''
+
+    # Normalise backslashes → forward slashes
+    normalised = stored.replace('\\', '/').strip()
+
+    # 1. As-is (already absolute and correct)
+    if os.path.isabs(normalised) and os.path.exists(normalised):
+        return normalised
+
+    # 2. Just the filename → look in UPLOAD_DIR/letterheads
+    fname = os.path.basename(normalised)
+    in_tmp = os.path.join(UPLOAD_DIR, 'letterheads', fname)
+    if os.path.exists(in_tmp):
+        return in_tmp
+
+    # 3. Relative to BASE_DIR
+    base_rel = os.path.join(BASE_DIR, *normalised.split('/'))
+    if os.path.exists(base_rel):
+        return base_rel
+
+    return ''
+
+
+# ── Seed /tmp from bundled project files (Vercel: filesystem is read-only) ───
+def init_data():
+    """
+    Copy seed JSON files and uploaded letterheads from the project directory
+    into /tmp so Vercel serverless functions can read/write them.
+    Also fixes letterhead paths that were stored as absolute Windows paths.
+    """
+    # 1. Copy JSON data files
+    project_data = os.path.join(BASE_DIR, 'data')
+    if os.path.isdir(project_data):
+        for fname in ['users.json', 'candidates.json',
+                      'verifications.json', 'tokens.json']:
+            tmp_path = os.path.join(DATA_DIR, fname)
+            src_path = os.path.join(project_data, fname)
+            if not os.path.exists(tmp_path) and os.path.exists(src_path):
+                shutil.copy2(src_path, tmp_path)
+
+    # 2. Copy letterheads
+    project_lh = os.path.join(BASE_DIR, 'uploads', 'letterheads')
+    tmp_lh     = os.path.join(UPLOAD_DIR, 'letterheads')
+    if os.path.isdir(project_lh):
+        for f in os.listdir(project_lh):
+            src = os.path.join(project_lh, f)
+            dst = os.path.join(tmp_lh, f)
+            if not os.path.exists(dst):
+                shutil.copy2(src, dst)
+
+    # 3. Fix any bad letterhead paths stored in users.json
+    users_path = os.path.join(DATA_DIR, 'users.json')
+    if os.path.exists(users_path):
+        with open(users_path) as fh:
+            users = json.load(fh)
+        changed = False
+        for uid, u in users.items():
+            raw = u.get('letterhead', '')
+            if raw:
+                fixed = _resolve_lh_path(raw)
+                if fixed and fixed != raw:
+                    users[uid]['letterhead'] = fixed
+                    changed = True
+        if changed:
+            with open(users_path, 'w') as fh:
+                json.dump(users, fh, indent=2)
+
+init_data()
+
+
+
+
 
 # ── JSON helpers ──────────────────────────────────────────────────────────────
 def load_json(path):
@@ -52,10 +233,12 @@ def get_users():  return load_json(USERS_F)
 def get_cands():  return load_json(CANDS_F)
 def get_verifs(): return load_json(VERIFS_F)
 def get_tokens(): return load_json(TOKENS_F)
+def get_email_history(): return load_json(DATA_DIR+'/email_history.json')
 def save_users(d):  save_json(USERS_F,  d)
 def save_cands(d):  save_json(CANDS_F,  d)
 def save_verifs(d): save_json(VERIFS_F, d)
 def save_tokens(d): save_json(TOKENS_F, d)
+def save_email_history(d): save_json(DATA_DIR+'/email_history.json', d)
 
 def hash_pw(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
@@ -66,8 +249,96 @@ def validate_password(pw):
 def current_user():
     uid = session.get('user_id')
     return get_users().get(uid) if uid else None
+
+
+# ── Subscription Helper Functions ───────────────────────────────────────────────
+def get_user_subscription(user_id):
+    users = get_users()
+    user = users.get(user_id)
+    if not user:
+        return None
+    return user.get('subscription', {})
+
+def check_usage_limit(user_id, action='offer'):
+    user = get_users().get(user_id)
+    if not user:
+        return False, 'User not found'
+    
+    sub = user.get('subscription', {})
+    tier = sub.get('tier', 'free')
+    tier_config = SUBSCRIPTION_TIERS.get(tier, SUBSCRIPTION_TIERS['free'])
+    
+    # Reset monthly counters if billing cycle has passed
+    billing_start = sub.get('billing_cycle_start', '2026-05-15')
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    # Simple monthly reset (in production, use proper date comparison)
+    if billing_start != today and today.endswith('-01'):
+        # Reset counters on first day of month
+        users = get_users()
+        users[user_id]['subscription']['offers_sent_this_month'] = 0
+        users[user_id]['subscription']['verifications_this_month'] = 0
+        users[user_id]['subscription']['billing_cycle_start'] = today
+        save_users(users)
+        sub = users[user_id]['subscription']
+    
+    if action == 'offer':
+        limit = tier_config['offers_per_month']
+        if limit == -1:  # Unlimited
+            return True, None
+        used = sub.get('offers_sent_this_month', 0)
+        if used >= limit:
+            return False, f'Monthly offer limit reached ({limit}/{limit}). Upgrade to send more.'
+        return True, None
+    
+    elif action == 'verification':
+        limit = tier_config['verifications_per_month']
+        if limit == -1:  # Unlimited
+            return True, None
+        used = sub.get('verifications_this_month', 0)
+        if used >= limit:
+            return False, f'Monthly verification limit reached ({limit}/{limit}). Upgrade to verify more.'
+        return True, None
+    
+    return True, None
+
+def increment_usage(user_id, action='offer'):
+    users = get_users()
+    user = users.get(user_id)
+    if not user:
+        return False
+    
+    if 'subscription' not in user:
+        user['subscription'] = {
+            'tier': 'free',
+            'status': 'active',
+            'offers_sent_this_month': 0,
+            'verifications_this_month': 0,
+            'billing_cycle_start': datetime.now().strftime('%Y-%m-%d'),
+            'stripe_customer_id': None,
+            'stripe_subscription_id': None
+        }
+    
+    if action == 'offer':
+        user['subscription']['offers_sent_this_month'] = user['subscription'].get('offers_sent_this_month', 0) + 1
+    elif action == 'verification':
+        user['subscription']['verifications_this_month'] = user['subscription'].get('verifications_this_month', 0) + 1
+    
+    users[user_id] = user
+    save_users(users)
+    return True
+
+
 # ── Email via Brevo API ───────────────────────────────────────────────────────
-def send_email(to, subject, html_body, attach_path=None, attach_name=None):
+def send_email(to, subject, html_body, attach_path=None, attach_name=None, user_id=None, candidate_id=None, email_type='offer'):
+    if not BREVO_API_KEY:
+        logger.error('BREVO_API_KEY is not set — check your .env file')
+        return False
+    
+    email_id = str(uuid.uuid4())
+    success = False
+    error_msg = None
+    
     try:
         configuration = sib_api_v3_sdk.Configuration()
         configuration.api_key['api-key'] = BREVO_API_KEY
@@ -77,51 +348,64 @@ def send_email(to, subject, html_body, attach_path=None, attach_name=None):
         )
 
         attachments = []
-
         if attach_path and os.path.exists(attach_path):
             with open(attach_path, 'rb') as f:
                 encoded_file = base64.b64encode(f.read()).decode()
-
             attachments.append({
                 'content': encoded_file,
                 'name': attach_name or 'offer_letter.pdf'
             })
 
-        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-            to=[{'email': to}],
-            sender={
-                'name': SENDER_NAME,
-                'email': SENDER_EMAIL
-            },
-            subject=subject,
-            html_content=html_body,
-            attachment=attachments
-        )
+        email_params = {
+            'to': [{'email': to}],
+            'sender': {'name': SENDER_NAME, 'email': SENDER_EMAIL},
+            'subject': subject,
+            'html_content': html_body
+        }
+        if attachments:
+            email_params['attachment'] = attachments
+
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(**email_params)
 
         api_instance.send_transac_email(send_smtp_email)
-
-        print(f'[BREVO EMAIL SENT] → {to}')
-
-        return True
+        logger.info(f'Email sent to {to}')
+        success = True
 
     except ApiException as e:
-        print(f'[BREVO ERROR] → {e}')
-        return False
-
+        logger.error(f'Brevo API error: {e}')
+        error_msg = str(e)
     except Exception as e:
-        print(f'[GENERAL EMAIL ERROR] → {e}')
-        return False
-
-
-def send_async(to, subject, html, attach_path=None, attach_name=None):
-    return send_email(
-        to,
-        subject,
-        html,
-        attach_path,
-        attach_name
-    )
+        logger.error(f'General email error: {e}')
+        error_msg = str(e)
     
+    # Log email to history
+    history = get_email_history()
+    history[email_id] = {
+        'id': email_id,
+        'user_id': user_id,
+        'candidate_id': candidate_id,
+        'email_type': email_type,
+        'to': to,
+        'subject': subject,
+        'sent_at': str(datetime.now()),
+        'status': 'sent' if success else 'failed',
+        'error': error_msg,
+        'has_attachment': bool(attach_path)
+    }
+    save_email_history(history)
+    
+    return success
+
+
+def send_async(to, subject, html, attach_path=None, attach_name=None, user_id=None, candidate_id=None, email_type='offer'):
+    t = threading.Thread(
+        target=send_email,
+        args=(to, subject, html, attach_path, attach_name, user_id, candidate_id, email_type),
+        daemon=True
+    )
+    t.start()
+
+
 #-------------------------patterns for offer letter designs-------------------------
 PATTERNS = {
     'classic': {
@@ -132,7 +416,7 @@ PATTERNS = {
         'row_even':    '#f0f4ff',
         'row_odd':     '#ffffff',
         'font_header': 'Helvetica-Bold',
-        'layout':      'classic',      # centred header + table
+        'layout':      'classic',
         'desc':        'Traditional corporate style with centred header and blue-accented table.',
     },
     'modern': {
@@ -143,7 +427,7 @@ PATTERNS = {
         'row_even':    '#f5f3ff',
         'row_odd':     '#ffffff',
         'font_header': 'Helvetica-Bold',
-        'layout':      'modern',       # left-aligned, two-column KV table
+        'layout':      'modern',
         'desc':        'Clean modern layout with purple palette and two-column detail cards.',
     },
     'minimal': {
@@ -154,7 +438,7 @@ PATTERNS = {
         'row_even':    '#f3f4f6',
         'row_odd':     '#ffffff',
         'font_header': 'Helvetica',
-        'layout':      'minimal',      # plain, no heavy borders
+        'layout':      'minimal',
         'desc':        'Light and airy with grey tones — ideal for creative industries.',
     },
     'executive': {
@@ -165,7 +449,7 @@ PATTERNS = {
         'row_even':    '#fff1f2',
         'row_odd':     '#ffffff',
         'font_header': 'Helvetica-Bold',
-        'layout':      'executive',    # formal letter with signature block
+        'layout':      'executive',
         'desc':        'Premium dark-red executive format with formal letter structure.',
     },
     'custom': {
@@ -174,6 +458,8 @@ PATTERNS = {
         'desc':   'Write your own offer letter content in the text area below.',
     },
 }
+
+
 #  PDF GENERATOR  (pattern-aware)
 def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''):
     cid      = candidate['id']
@@ -186,10 +472,9 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
     joining  = candidate.get('joining_date', '')
     salary   = candidate.get('salary', '')
     emp_type = candidate.get('employment_type', 'full_time').replace('_', ' ').title()
-    lh_path  = hr_user.get('letterhead', '')
+    lh_path  = _resolve_lh_path(hr_user.get('letterhead', ''))
 
-    # Choose top-margin based on whether letterhead exists
-    top_margin = 54 * mm if (lh_path and os.path.exists(lh_path)) else 18 * mm
+    top_margin = 54 * mm if lh_path else 18 * mm
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4,
@@ -286,7 +571,6 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
 
     # ── MODERN ────────────────────────────────────────────────────────────────
     elif layout == 'modern':
-        # Left-aligned header bar + two-column key-value cards
         header_tbl = Table([[Paragraph(company,
                               ps('mco', fontName='Helvetica-Bold', fontSize=18,
                                  textColor=colors.white)),
@@ -434,7 +718,6 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 def _kv_cell(label, value, accent_color):
-    """Small two-line key-value card paragraph for Modern layout."""
     styles = getSampleStyleSheet()
     return Paragraph(
         f'<font color="{accent_color}" size="8"><b>{label.upper()}</b></font><br/>'
@@ -468,7 +751,6 @@ def _make_table(tbl_data, accent, accent2, row_even, row_odd, grid=True):
 
 
 def _build_pdf(doc, buf, story, lh_path, out_path):
-    """Build PDF; if a letterhead exists, merge it as background."""
     if lh_path and os.path.exists(lh_path):
         buf2 = io.BytesIO()
         doc2 = SimpleDocTemplate(buf2, pagesize=A4,
@@ -479,7 +761,7 @@ def _build_pdf(doc, buf, story, lh_path, out_path):
         try:
             _merge_letterhead(lh_path, buf2.read(), out_path)
         except Exception as e:
-            print(f'Merge failed: {e}; using plain PDF')
+            logger.warning(f'Letterhead merge failed: {e}; using plain PDF')
             doc.build(story)
             buf.seek(0)
             open(out_path, 'wb').write(buf.read())
@@ -490,25 +772,17 @@ def _build_pdf(doc, buf, story, lh_path, out_path):
 
 
 def _merge_letterhead(lh_path, content_bytes, out_path):
-    """
-    Composite the letterhead (page 1) as a background image under the
-    content PDF, then save to out_path.
-    Requires: pip install pdf2image pillow pypdf
-    Falls back to plain content PDF if dependencies are missing.
-    """
     try:
         from pdf2image import convert_from_path
         import tempfile
         from pypdf import PdfReader, PdfWriter
 
-        # Render letterhead page-1 to PNG
         imgs = convert_from_path(lh_path, first_page=1, last_page=1, dpi=150)
         if not imgs:
             raise ValueError('No pages in letterhead')
         tmp_img = tempfile.mktemp(suffix='.png')
         imgs[0].save(tmp_img, 'PNG')
 
-        # Build a single-page PDF that is just the letterhead image
         tmp_lh_pdf = tempfile.mktemp(suffix='.pdf')
         w_pt, h_pt = A4
         c = rlc.Canvas(tmp_lh_pdf, pagesize=A4)
@@ -516,7 +790,6 @@ def _merge_letterhead(lh_path, content_bytes, out_path):
         c.save()
         os.unlink(tmp_img)
 
-        # Merge: letterhead as background, content on top
         lh_reader      = PdfReader(tmp_lh_pdf)
         content_reader = PdfReader(io.BytesIO(content_bytes))
         writer         = PdfWriter()
@@ -535,10 +808,12 @@ def _merge_letterhead(lh_path, content_bytes, out_path):
 
     except ImportError:
         open(out_path, 'wb').write(content_bytes)
+
+
 #  PREVIEW HTML  (pattern-aware, letterhead as background)
 def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_text=''):
     company  = hr_user['company_name']
-    lh_path  = hr_user.get('letterhead', '')
+    lh_path  = _resolve_lh_path(hr_user.get('letterhead', ''))   # ← use resolver
     today    = datetime.now().strftime('%d %B %Y')
     name     = candidate.get('name', '')
     role     = candidate.get('role', '')
@@ -555,7 +830,6 @@ def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_te
     lh_bg_style = ''
     lh_notice   = ''
     if lh_path and os.path.exists(lh_path):
-        # Convert first page of letterhead PDF → base64 PNG for CSS background
         try:
             from pdf2image import convert_from_path
             import tempfile
@@ -578,7 +852,6 @@ def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_te
                     'be sent with this letterhead as background.</div>'
                 )
         except Exception:
-            # pdf2image unavailable — show plain iframe fallback
             with open(lh_path, 'rb') as f:
                 b64 = base64.b64encode(f.read()).decode()
             lh_notice = (
@@ -742,7 +1015,6 @@ def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_te
 <div style="position:relative;font-family:Georgia,serif;
             border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;
             background:#fff;{lh_bg_style}">
-  <!-- semi-transparent white overlay so content is readable over letterhead -->
   <div style="position:relative;background:rgba(255,255,255,0.88);padding:28px 32px">
     {lh_notice}
     {pat_badge}
@@ -753,6 +1025,8 @@ def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_te
     </div>
   </div>
 </div>'''
+
+
 #  EMAIL HTML BUILDERS
 def offer_email_html(c, hr, accept_link, decline_link):
     company  = hr['company_name']
@@ -820,10 +1094,6 @@ def offer_email_html(c, hr, accept_link, decline_link):
 
 
 def bg_verification_email_html(candidate, bg_link, company):
-    """
-    Email sent to the candidate after they ACCEPT the offer,
-    asking them to complete background verification.
-    """
     name = candidate.get('name', '')
     role = candidate.get('role', '')
     return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
@@ -893,52 +1163,100 @@ def login_page():
 @app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.json or {}
+    username = sanitize_string(data.get('username', ''))
+    password = data.get('password', '')
+    
+    if not username or not password:
+        return jsonify({'success': False, 'message': 'Username and password are required'}), 400
+    
     user = next((u for u in get_users().values()
-                 if u['username'] == data.get('username')
-                 and u['password'] == hash_pw(data.get('password', ''))), None)
+                 if u['username'] == username
+                 and u['password'] == hash_pw(password)), None)
     if not user:
         return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
     session['user_id'] = user['id']
+    session.permanent = True
     return jsonify({'success': True})
 
 @app.route('/api/register', methods=['POST'])
 def api_register():
     users        = get_users()
-    username     = request.form.get('username', '').strip()
-    email        = request.form.get('email', '').strip()
+    username     = sanitize_string(request.form.get('username', ''))
+    email        = sanitize_string(request.form.get('email', ''))
     password     = request.form.get('password', '')
     confirm      = request.form.get('confirm_password', '')
-    company_name = request.form.get('company_name', '').strip()
+    company_name = sanitize_string(request.form.get('company_name', ''))
+    
+    # Validate required fields
     if not all([username, email, password, confirm, company_name]):
         return jsonify({'success': False, 'message': 'All fields are required'}), 400
+    
+    # Validate email format
+    if not validate_email(email):
+        return jsonify({'success': False, 'message': 'Invalid email format'}), 400
+    
+    # Check for duplicates
     if any(u['username'] == username for u in users.values()):
         return jsonify({'success': False, 'message': 'Username already exists'}), 400
     if any(u['email'] == email for u in users.values()):
         return jsonify({'success': False, 'message': 'Email already registered'}), 400
+    
+    # Validate password
     if password != confirm:
         return jsonify({'success': False, 'message': 'Passwords do not match'}), 400
     if not validate_password(password):
         return jsonify({'success': False, 'message':
             'Password needs 8+ chars, uppercase, lowercase & special character'}), 400
+    
+    # Validate letterhead file
     lh = request.files.get('letterhead')
     if not lh or not lh.filename:
         return jsonify({'success': False, 'message': 'Company letterhead (PDF) is required'}), 400
     if not lh.filename.lower().endswith('.pdf'):
         return jsonify({'success': False, 'message': 'Letterhead must be a PDF file'}), 400
+    if not validate_file_size(lh, max_size_mb=5):
+        return jsonify({'success': False, 'message': 'Letterhead file size must be less than 5MB'}), 400
+    
     fname   = secure_filename(lh.filename)
     lh_path = os.path.join(UPLOAD_DIR, 'letterheads', fname)
     lh.save(lh_path)
+    # Also save to project uploads so it persists across restarts
+    project_lh = os.path.join(BASE_DIR, 'uploads', 'letterheads', fname)
+    if not os.path.exists(project_lh):
+        shutil.copy2(lh_path, project_lh)
     uid = str(uuid.uuid4())
-    users[uid] = {'id': uid, 'username': username, 'email': email,
-                  'password': hash_pw(password), 'company_name': company_name,
-                  'letterhead': lh_path, 'created_at': str(datetime.now())}
+    users[uid] = {
+        'id': uid,
+        'username': username,
+        'email': email,
+        'password': hash_pw(password),
+        'company_name': company_name,
+        'letterhead': lh_path,
+        'created_at': str(datetime.now()),
+        'subscription': {
+            'tier': 'free',
+            'status': 'active',
+            'offers_sent_this_month': 0,
+            'verifications_this_month': 0,
+            'billing_cycle_start': datetime.now().strftime('%Y-%m-%d'),
+            'stripe_customer_id': None,
+            'stripe_subscription_id': None
+        }
+    }
     save_users(users)
     return jsonify({'success': True})
 
 @app.route('/api/forgot-password', methods=['POST'])
 def api_forgot_password():
-    email = (request.json or {}).get('email', '').strip()
-    user  = next((u for u in get_users().values() if u['email'] == email), None)
+    email = sanitize_string((request.json or {}).get('email', ''))
+    
+    if not email:
+        return jsonify({'success': False, 'message': 'Email is required'}), 400
+    
+    if not validate_email(email):
+        return jsonify({'success': False, 'message': 'Invalid email format'}), 400
+    
+    user = next((u for u in get_users().values() if u['email'] == email), None)
     if not user:
         return jsonify({'success': False, 'message': 'Email not found'}), 404
     token  = str(uuid.uuid4())
@@ -971,7 +1289,7 @@ background:#f0f4fa;font-family:Arial,sans-serif">
       If you did not request this, ignore this email.</p>
   </td></tr>
 </table></td></tr></table></body></html>"""
-    send_async(email, 'Reset Your OfferFlow Password', html)
+    send_async(email, 'Reset Your OfferFlow Password', html, user_id=user['id'], email_type='password_reset')
     return jsonify({'success': True, 'message': 'Password reset link sent to your email'})
 
 @app.route('/reset-password/<token>')
@@ -1005,7 +1323,6 @@ def logout():
     session.clear()
     return redirect('/')
 
-# Dashboard
 @app.route('/dashboard')
 def dashboard():
     if not current_user():
@@ -1061,7 +1378,6 @@ def api_verifications():
         result = [r for r in result if r['verification_status'] == status]
     return jsonify(result)
 
-# ── Upload Excel ──────────────────────────────────────────────────────────────
 @app.route('/upload-excel')
 def upload_excel_page():
     if not current_user():
@@ -1074,8 +1390,12 @@ def api_upload_excel():
     if not u:
         return jsonify({'success': False}), 401
     f = request.files.get('file')
-    if not f or not f.filename.endswith('.xlsx'):
+    if not f or not f.filename:
+        return jsonify({'success': False, 'message': 'Please upload a file'}), 400
+    if not f.filename.lower().endswith('.xlsx'):
         return jsonify({'success': False, 'message': 'Please upload a .xlsx file'}), 400
+    if not validate_file_size(f, max_size_mb=10):
+        return jsonify({'success': False, 'message': 'File size must be less than 10MB'}), 400
     path = os.path.join(UPLOAD_DIR, 'excel', secure_filename(f.filename))
     f.save(path)
     try:
@@ -1119,42 +1439,43 @@ def api_save_candidates():
     save_cands(cands)
     return jsonify({'success': True, 'candidate_ids': new_ids})
 
-
-# ── Pattern list (for frontend to build the selector UI) ─────────────────────
 @app.route('/api/patterns')
 def api_patterns():
-    """Return pattern metadata so the frontend can render the selector."""
     return jsonify([
         {'key': k, 'label': v['label'], 'desc': v['desc'],
          'accent': v.get('accent', '#0d1b3e'), 'is_custom': k == 'custom'}
         for k, v in PATTERNS.items()
     ])
 
-
-# ── Preview ───────────────────────────────────────────────────────────────────
 @app.route('/api/preview-letter', methods=['POST'])
 def api_preview_letter():
     u = current_user()
     if not u:
-        return jsonify({'success': False}), 401
+        return jsonify({'success': False, 'message': 'Not authenticated'}), 401
     data        = request.json or {}
     c           = data.get('candidate', {})
     c['employment_type'] = data.get('employment_type', 'full_time')
     c['id']     = 'preview'
     pattern_key = data.get('pattern', 'classic')
     custom_text = data.get('custom_text', '')
-    return jsonify({
-        'success': True,
-        'html': letterhead_preview_html(u, c, pattern_key, custom_text),
-    })
+    try:
+        html = letterhead_preview_html(u, c, pattern_key, custom_text)
+        return jsonify({'success': True, 'html': html})
+    except Exception as e:
+        logger.error(f'Preview generation error: {e}')
+        return jsonify({'success': False, 'message': str(e)}), 500
 
-
-# ── Send offer emails ─────────────────────────────────────────────────────────
 @app.route('/api/send-offer-emails', methods=['POST'])
 def api_send_offer_emails():
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
+    
+    # Check usage limit before sending
+    can_send, error_msg = check_usage_limit(u['id'], 'offer')
+    if not can_send:
+        return jsonify({'success': False, 'message': error_msg}), 429
+    
     data  = request.json or {}
     cids  = data.get('candidate_ids', [])
     cands = get_cands()
@@ -1164,8 +1485,14 @@ def api_send_offer_emails():
         if not c:
             continue
         if c.get('email_sent_at'):
-            print(f'Email already sent to {c["email"]}')
+            logger.info(f'Email already sent to {c["email"]}')
             continue
+        
+        # Check limit for each candidate
+        can_send, error_msg = check_usage_limit(u['id'], 'offer')
+        if not can_send:
+            break
+        
         accept_link  = f"{BASE_URL}/offer-response/{cid}/accept"
         decline_link = f"{BASE_URL}/offer-response/{cid}/decline"
         pattern_key  = c.get('pattern', 'classic')
@@ -1173,21 +1500,26 @@ def api_send_offer_emails():
         try:
             pdf_path = generate_offer_pdf(c, u, pattern_key, custom_text)
         except Exception as e:
-            print(f'PDF failed for {cid}: {e}')
+            logger.error(f'PDF generation failed for candidate {cid}: {e}')
             pdf_path = None
         subject = f"Job Offer — {c.get('role', '')} at {u['company_name']}"
         send_async(
             c['email'], subject,
             offer_email_html(c, u, accept_link, decline_link),
             attach_path=pdf_path,
-            attach_name=f"Offer_Letter_{c['name'].replace(' ', '_')}.pdf")
+            attach_name=f"Offer_Letter_{c['name'].replace(' ', '_')}.pdf",
+            user_id=u['id'],
+            candidate_id=cid,
+            email_type='offer')
         cands[cid]['email_sent_at'] = str(datetime.now())
         sent += 1
+        
+        # Increment usage counter
+        increment_usage(u['id'], 'offer')
+    
     save_cands(cands)
     return jsonify({'success': True, 'sent': sent})
 
-
-# ── Candidate offer response (Accept / Decline) ───────────────────────────────
 @app.route('/offer-response/<cid>/<action>')
 def offer_response(cid, action):
     cands = get_cands()
@@ -1202,7 +1534,6 @@ def offer_response(cid, action):
             'offer_accepted.html' if current_status == 'accepted' else 'offer_declined.html',
             candidate=c)
 
-    # ── ACCEPT ────────────────────────────────────────────────────────────────
     if action == 'accept':
         c['offer_status']  = 'accepted'
         c['responded_at']  = str(datetime.now())
@@ -1231,16 +1562,17 @@ def offer_response(cid, action):
             hr      = users.get(c['hr_id'], {})
             company = hr.get('company_name', 'the company')
 
-            # ── Send nicely formatted BG verification email ───────────────────
             send_async(
                 c['email'],
                 f'Next Step: Complete Your Background Verification — {company}',
                 bg_verification_email_html(c, bg_link, company),
+                user_id=c['hr_id'],
+                candidate_id=cid,
+                email_type='verification'
             )
 
         return render_template('offer_accepted.html', candidate=c)
 
-    # ── DECLINE ───────────────────────────────────────────────────────────────
     elif action == 'decline':
         c['offer_status'] = 'declined'
         c['responded_at'] = str(datetime.now())
@@ -1249,8 +1581,6 @@ def offer_response(cid, action):
 
     return "<div style='font-family:sans-serif;text-align:center;margin-top:80px'><h2>Invalid action.</h2></div>"
 
-
-# ── Background verification form ──────────────────────────────────────────────
 @app.route('/background-verification/<vid>')
 def background_verification(vid):
     verifs = get_verifs()
@@ -1258,7 +1588,7 @@ def background_verification(vid):
     if not v:
         return ("<div style='font-family:sans-serif;text-align:center;margin-top:80px'>"
                 "<h2>Invalid or expired link.</h2></div>"), 404
-    return render_template('background_verification.html', verification=v)
+    return render_template('bg_verification.html', verification=v)
 
 @app.route('/api/submit-verification', methods=['POST'])
 def api_submit_verification():
@@ -1331,9 +1661,11 @@ def api_submit_verification():
       </td>
     </tr></table>
   </td></tr>
-</table></td></tr></table></body></html>""")
+</table></td></tr></table></body></html>""",
+                user_id=v.get('hr_id'),
+                candidate_id=vid,
+                email_type='employment_verification')
         else:
-            # Fresher — auto-verified
             v['verification_status'] = 'verified'
             send_async(v['email'], '🎉 Background Verification Complete!',
                 f"""<html><body style="font-family:Arial;margin:0;padding:32px 0;background:#f0f4fa">
@@ -1351,14 +1683,15 @@ def api_submit_verification():
       HR will be in touch with onboarding details shortly.
     </p>
   </td></tr>
-</table></td></tr></table></body></html>""")
+</table></td></tr></table></body></html>""",
+                user_id=v.get('hr_id'),
+                candidate_id=vid,
+                email_type='verification_complete')
         v['submitted_at'] = str(datetime.now())
 
     save_verifs(verifs)
     return jsonify({'success': True, 'status': v.get('verification_status')})
 
-
-# ── Company verify (employer confirms/rejects previous employment) ────────────
 @app.route('/company-verify/<vid>/<action>')
 def company_verify(vid, action):
     verifs = get_verifs()
@@ -1387,7 +1720,10 @@ def company_verify(vid, action):
       at <b>{company}</b>. HR will send your onboarding schedule shortly.
     </p>
   </td></tr>
-</table></td></tr></table></body></html>""")
+</table></td></tr></table></body></html>""",
+            user_id=v.get('hr_id'),
+            candidate_id=vid,
+            email_type='verification_verified')
 
     elif action == 'reject':
         v['verification_status'] = 'rejected'
@@ -1406,13 +1742,14 @@ def company_verify(vid, action):
       Thank you for your interest.
     </p>
   </td></tr>
-</table></td></tr></table></body></html>""")
+</table></td></tr></table></body></html>""",
+            user_id=v.get('hr_id'),
+            candidate_id=vid,
+            email_type='verification_rejected')
 
     save_verifs(verifs)
     return render_template('company_verify_done.html', action=action, candidate=v)
 
-
-# ── Export / download template ────────────────────────────────────────────────
 @app.route('/api/download-template')
 def download_template():
     u = current_user()
@@ -1426,10 +1763,301 @@ def download_template():
             [{'Name': '', 'Gmail id': '', 'Role': '', 'Joining date': '',
               'Salary': '', 'Employment Type': '', 'Status': ''}]
     df   = pd.DataFrame(rows)
-    path = '/tmp/offers_export.xlsx'
+    path = os.path.join('/tmp', 'offers_export.xlsx')
     df.to_excel(path, index=False)
     return send_file(path, as_attachment=True, download_name='offers_export.xlsx')
 
 
+# ── Subscription Management Routes ───────────────────────────────────────────────
+@app.route('/pricing')
+def pricing():
+    u=current_user()
+    return render_template('pricing.html', user=u, tiers=SUBSCRIPTION_TIERS)
+
+@app.route('/settings')
+def settings_page():
+    if not current_user():
+        return redirect('/login')
+    return render_template('settings.html')
+
+@app.route('/api/settings')
+def api_settings():
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    return jsonify({'success': True, 'user': u})
+
+@app.route('/api/update-profile', methods=['POST'])
+def api_update_profile():
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    
+    data = request.json or {}
+    email = sanitize_string(data.get('email', ''))
+    company_name = sanitize_string(data.get('company_name', ''))
+    
+    if not email or not company_name:
+        return jsonify({'success': False, 'message': 'All fields are required'}), 400
+    
+    if not validate_email(email):
+        return jsonify({'success': False, 'message': 'Invalid email format'}), 400
+    
+    users = get_users()
+    if email != u['email'] and any(u['email'] == email for u in users.values()):
+        return jsonify({'success': False, 'message': 'Email already registered'}), 400
+    
+    users[u['id']]['email'] = email
+    users[u['id']]['company_name'] = company_name
+    save_users(users)
+    
+    logger.info(f'User {u["id"]} updated profile')
+    return jsonify({'success': True})
+
+@app.route('/api/change-password', methods=['POST'])
+def api_change_password():
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    
+    data = request.json or {}
+    current_password = data.get('current_password', '')
+    new_password = data.get('new_password', '')
+    
+    if not current_password or not new_password:
+        return jsonify({'success': False, 'message': 'All fields are required'}), 400
+    
+    if u['password'] != hash_pw(current_password):
+        return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
+    
+    if not validate_password(new_password):
+        return jsonify({'success': False, 'message': 
+            'Password needs 8+ chars, uppercase, lowercase & special character'}), 400
+    
+    users = get_users()
+    users[u['id']]['password'] = hash_pw(new_password)
+    save_users(users)
+    
+    logger.info(f'User {u["id"]} changed password')
+    return jsonify({'success': True})
+
+@app.route('/api/update-letterhead', methods=['POST'])
+def api_update_letterhead():
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    
+    lh = request.files.get('letterhead')
+    if not lh or not lh.filename:
+        return jsonify({'success': False, 'message': 'Letterhead file is required'}), 400
+    if not lh.filename.lower().endswith('.pdf'):
+        return jsonify({'success': False, 'message': 'Letterhead must be a PDF file'}), 400
+    if not validate_file_size(lh, max_size_mb=5):
+        return jsonify({'success': False, 'message': 'Letterhead file size must be less than 5MB'}), 400
+    
+    fname = secure_filename(lh.filename)
+    lh_path = os.path.join(UPLOAD_DIR, 'letterheads', fname)
+    lh.save(lh_path)
+    
+    # Also save to project uploads so it persists across restarts
+    project_lh = os.path.join(BASE_DIR, 'uploads', 'letterheads', fname)
+    if not os.path.exists(project_lh):
+        shutil.copy2(lh_path, project_lh)
+    
+    users = get_users()
+    users[u['id']]['letterhead'] = lh_path
+    save_users(users)
+    
+    logger.info(f'User {u["id"]} updated letterhead')
+    return jsonify({'success': True})
+
+@app.route('/api/email-history')
+def api_email_history():
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    
+    history = get_email_history()
+    user_emails = [email for email in history.values() if email.get('user_id') == u['id']]
+    
+    # Sort by sent_at descending (newest first)
+    user_emails.sort(key=lambda x: x.get('sent_at', ''), reverse=True)
+    
+    return jsonify({'success': True, 'emails': user_emails})
+
+@app.route('/api/download-offer-letter/<cid>')
+def download_offer_letter(cid):
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    
+    cands = get_cands()
+    c = cands.get(cid)
+    
+    if not c:
+        return jsonify({'success': False, 'message': 'Candidate not found'}), 404
+    
+    if c.get('hr_id') != u['id']:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    # Check if PDF exists
+    pdf_path = os.path.join(LETTER_DIR, f"offer_{cid}.pdf")
+    if not os.path.exists(pdf_path):
+        return jsonify({'success': False, 'message': 'Offer letter not found. Please send the offer first.'}), 404
+    
+    return send_file(pdf_path, as_attachment=True, download_name=f"Offer_Letter_{c['name'].replace(' ', '_')}.pdf")
+
+@app.route('/api/cancel-offer/<cid>', methods=['POST'])
+def cancel_offer(cid):
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    
+    cands = get_cands()
+    c = cands.get(cid)
+    
+    if not c:
+        return jsonify({'success': False, 'message': 'Candidate not found'}), 404
+    
+    if c.get('hr_id') != u['id']:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    # Only allow cancelling pending offers
+    if c.get('offer_status') != 'pending':
+        return jsonify({'success': False, 'message': 'Can only cancel pending offers'}), 400
+    
+    # Cancel the offer
+    c['offer_status'] = 'cancelled'
+    c['cancelled_at'] = str(datetime.now())
+    save_cands(cands)
+    
+    logger.info(f'Offer cancelled for candidate {cid} by user {u["id"]}')
+    return jsonify({'success': True, 'message': 'Offer cancelled successfully'})
+
+@app.route('/api/get-candidate/<cid>')
+def get_candidate(cid):
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    
+    cands = get_cands()
+    c = cands.get(cid)
+    
+    if not c:
+        return jsonify({'success': False, 'message': 'Candidate not found'}), 404
+    
+    if c.get('hr_id') != u['id']:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    return jsonify({'success': True, 'candidate': c})
+
+@app.route('/api/update-candidate/<cid>', methods=['POST'])
+def update_candidate(cid):
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    
+    cands = get_cands()
+    c = cands.get(cid)
+    
+    if not c:
+        return jsonify({'success': False, 'message': 'Candidate not found'}), 404
+    
+    if c.get('hr_id') != u['id']:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    # Don't allow editing after email is sent
+    if c.get('email_sent_at'):
+        return jsonify({'success': False, 'message': 'Cannot edit candidate after email is sent'}), 400
+    
+    data = request.json or {}
+    
+    # Update allowed fields
+    allowed_fields = ['name', 'email', 'role', 'joining_date', 'salary', 'employment_type']
+    for field in allowed_fields:
+        if field in data:
+            c[field] = sanitize_string(data[field])
+    
+    # Validate email if changed
+    if 'email' in data and not validate_email(c['email']):
+        return jsonify({'success': False, 'message': 'Invalid email format'}), 400
+    
+    save_cands(cands)
+    
+    logger.info(f'Candidate {cid} updated by user {u["id"]}')
+    return jsonify({'success': True, 'message': 'Candidate updated successfully'})
+
+@app.route('/api/subscription')
+def api_subscription():
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    
+    sub = u.get('subscription', {})
+    tier = sub.get('tier', 'free')
+    tier_config = SUBSCRIPTION_TIERS.get(tier, SUBSCRIPTION_TIERS['free'])
+    
+    return jsonify({
+        'success': True,
+        'subscription': {
+            'tier': tier,
+            'status': sub.get('status', 'active'),
+            'offers_sent': sub.get('offers_sent_this_month', 0),
+            'offers_limit': tier_config['offers_per_month'],
+            'verifications_sent': sub.get('verifications_this_month', 0),
+            'verifications_limit': tier_config['verifications_per_month'],
+            'billing_cycle_start': sub.get('billing_cycle_start', ''),
+            'stripe_customer_id': sub.get('stripe_customer_id'),
+            'stripe_subscription_id': sub.get('stripe_subscription_id')
+        },
+        'tier_config': tier_config
+    })
+
+@app.route('/api/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    
+    data = request.json
+    tier = data.get('tier')
+    
+    if tier not in SUBSCRIPTION_TIERS or tier == 'free':
+        return jsonify({'success': False, 'message': 'Invalid tier'}), 400
+    
+    tier_config = SUBSCRIPTION_TIERS[tier]
+    
+    # For now, return a mock response (Stripe integration requires actual Stripe account)
+    # In production, you would create a Stripe checkout session here
+    return jsonify({
+        'success': True,
+        'message': f'Checkout for {tier_config["name"]} tier would be created here',
+        'tier': tier,
+        'price': tier_config['price']
+    })
+
+@app.route('/api/upgrade-tier', methods=['POST'])
+def upgrade_tier():
+    u = current_user()
+    if not u:
+        return jsonify({'success': False}), 401
+    
+    data = request.json
+    tier = data.get('tier')
+    
+    if tier not in SUBSCRIPTION_TIERS:
+        return jsonify({'success': False, 'message': 'Invalid tier'}), 400
+    
+    users = get_users()
+    users[u['id']]['subscription']['tier'] = tier
+    users[u['id']]['subscription']['status'] = 'active'
+    users[u['id']]['subscription']['offers_sent_this_month'] = 0
+    users[u['id']]['subscription']['verifications_this_month'] = 0
+    users[u['id']]['subscription']['billing_cycle_start'] = datetime.now().strftime('%Y-%m-%d')
+    save_users(users)
+    
+    return jsonify({'success': True, 'message': f'Upgraded to {tier} tier'})
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

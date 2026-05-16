@@ -4,17 +4,22 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Offer Accepted — OfferFlow</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <style>
+:root{--navy:#0d1b3e;--blue:#1a56db;--blue-l:#3b82f6;--teal:#0ea5e9;--green:#10b981;--gold:#f59e0b;--bg:#f4f7fc;--surface:#ffffff;--surface-2:#f8faff;--border:rgba(0,0,0,0.07);--shadow-lg:0 12px 40px rgba(0,0,0,0.12);--shadow-blue:0 8px 32px rgba(26,86,219,0.25);--font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;--ease-spring:cubic-bezier(0.34,1.56,0.64,1);--dur-normal:280ms}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:linear-gradient(135deg,#f0fdf4,#dcfce7);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:#fff;border-radius:20px;padding:60px 48px;max-width:520px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.08)}
-.icon{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:2rem;color:#fff}
-h1{font-family:'DM Serif Display',serif;font-size:2rem;color:#065f46;margin-bottom:12px}
-p{color:#64748b;line-height:1.7;margin-bottom:8px}
-.info-box{background:#f0fdf4;border-radius:12px;padding:20px;margin:24px 0;text-align:left}
-.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dcfce7;font-size:.9rem}
-.info-row:last-child{border-bottom:none}.info-row b{color:#065f46}
-.next-badge{display:inline-flex;align-items:center;gap:8px;background:#dbeafe;color:#1e40af;padding:10px 20px;border-radius:10px;font-weight:600;font-size:.9rem;margin-top:16px}
+body{font-family:var(--font-body);background:linear-gradient(135deg,#f0fdf4,#dcfce7);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--surface);border-radius:24px;padding:60px 48px;max-width:520px;width:100%;text-align:center;box-shadow:var(--shadow-lg);border:1px solid var(--border);animation:cardIn 0.6s var(--ease-spring) backwards}
+@keyframes cardIn{from{opacity:0;transform:translateY(30px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.icon{width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--green),#059669);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:2.2rem;color:#fff;animation:iconPop 0.5s var(--ease-spring) 0.2s backwards;box-shadow:0 8px 32px rgba(16,185,129,0.3)}
+@keyframes iconPop{0%{transform:scale(0)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+h1{font-family:var(--font-display);font-size:2.2rem;color:#065f46;margin-bottom:12px;animation:fadeSlideUp var(--dur-normal) var(--ease-spring) 0.3s backwards}
+p{color:#64748b;line-height:1.7;margin-bottom:8px;animation:fadeSlideUp var(--dur-normal) var(--ease-spring) 0.4s backwards}
+.info-box{background:var(--surface-2);border-radius:16px;padding:24px;margin:24px 0;text-align:left;border:1px solid var(--border);animation:fadeSlideUp var(--dur-normal) var(--ease-spring) 0.5s backwards}
+.info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:.9rem;transition:background var(--dur-fast) var(--ease-smooth)}
+.info-row:last-child{border-bottom:none}.info-row:hover{background:rgba(0,0,0,0.02)}.info-row b{color:#065f46;font-weight:600}
+.next-badge{display:inline-flex;align-items:center;gap:8px;background:#dbeafe;color:#1e40af;padding:12px 24px;border-radius:12px;font-weight:600;font-size:.9rem;margin-top:16px;animation:fadeSlideUp var(--dur-normal) var(--ease-spring) 0.6s backwards;box-shadow:0 4px 16px rgba(30,64,175,0.15)}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
@@ -30,4 +35,38 @@ p{color:#64748b;line-height:1.7;margin-bottom:8px}
   </div>
   <div class="next-badge">🔒 Background verification form will be sent to your email shortly</div>
 </div>
+<script>
+// Confetti burst on page load
+const duration = 3000;
+const end = Date.now() + duration;
+
+(function frame() {
+  confetti({
+    particleCount: 5,
+    angle: 60,
+    spread: 55,
+    origin: { x: 0 },
+    colors: ['#10b981', '#3b82f6', '#0ea5e9', '#f59e0b']
+  });
+  confetti({
+    particleCount: 5,
+    angle: 120,
+    spread: 55,
+    origin: { x: 1 },
+    colors: ['#10b981', '#3b82f6', '#0ea5e9', '#f59e0b']
+  });
+
+  if (Date.now() < end) {
+    requestAnimationFrame(frame);
+  }
+}());
+
+// Initial burst
+confetti({
+  particleCount: 100,
+  spread: 70,
+  origin: { y: 0.6 },
+  colors: ['#10b981', '#3b82f6', '#0ea5e9', '#f59e0b']
+});
+</script>
 </body></html>

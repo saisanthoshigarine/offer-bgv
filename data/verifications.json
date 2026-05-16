@@ -31,5 +31,27 @@
     "phone": "",
     "verification_status": "pending",
     "created_at": "2026-05-12 11:37:12.004934"
+  },
+  "197b35a9-9915-4dfb-83f6-5874deb3e3c3": {
+    "id": "197b35a9-9915-4dfb-83f6-5874deb3e3c3",
+    "candidate_id": "064b996d-aa52-4e44-b18f-a4054a749807",
+    "hr_id": "87bd344c-19d6-4077-b567-9389a6d70b62",
+    "name": "Y.Rishitha Reddy",
+    "email": "yrishithareddy72@gmail.com",
+    "salary": "10000",
+    "phone": "",
+    "verification_status": "pending",
+    "created_at": "2026-05-15 09:26:48.602853"
+  },
+  "cd6ce4c3-1b8b-4e92-8909-df412ec456c1": {
+    "id": "cd6ce4c3-1b8b-4e92-8909-df412ec456c1",
+    "candidate_id": "e6c0831a-a9d9-44e0-837a-44a156f1d4ec",
+    "hr_id": "87bd344c-19d6-4077-b567-9389a6d70b62",
+    "name": "Y.Rishitha Reddy",
+    "email": "yrishithareddy72@gmail.com",
+    "salary": "10000",
+    "phone": "",
+    "verification_status": "pending",
+    "created_at": "2026-05-15 09:42:41.434897"
   }
 }

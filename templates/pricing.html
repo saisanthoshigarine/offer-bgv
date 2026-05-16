@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Pricing - OfferFlow{% endblock %}
+
+{% block head %}
+<style>
+.pricing-wrap{padding:80px 60px;max-width:1400px;margin:0 auto}
+.pricing-header{text-align:center;margin-bottom:60px;animation:fadeSlideUp var(--dur-normal) var(--ease-spring) backwards}
+.pricing-header h1{font-family:var(--font-display);font-size:2.8rem;color:var(--navy);margin-bottom:16px}
+.pricing-header p{color:var(--muted);font-size:1.1rem;max-width:600px;margin:0 auto}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px;align-items:start}
+.plan-card{background:var(--grad-card);border-radius:20px;border:1px solid var(--border);padding:36px;position:relative;transition:all var(--dur-normal) var(--ease-smooth);box-shadow:var(--shadow-sm);animation:fadeSlideUp var(--dur-normal) var(--ease-spring) backwards}
+.plan-card:nth-child(1){animation-delay:0ms}
+.plan-card:nth-child(2){animation-delay:100ms}
+.plan-card:nth-child(3){animation-delay:200ms}
+.plan-card:nth-child(4){animation-delay:300ms}
+.plan-card:hover{transform:translateY(-8px);box-shadow:var(--shadow-blue);border-color:var(--blue)}
+.plan-card.popular{border:2px solid var(--blue);box-shadow:var(--shadow-blue);position:relative}
+.plan-card.popular::before{content:'';position:absolute;inset:-2px;border-radius:22px;padding:2px;background:conic-gradient(from var(--angle,0deg),#7c3aed,var(--blue),var(--teal),#7c3aed);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;animation:spin 4s linear infinite}
+@property --angle{syntax:'<angle>';initial-value:0deg}
+@keyframes spin{to{--angle:360deg}}
+.plan-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff;padding:6px 20px;border-radius:20px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;z-index:2;box-shadow:0 4px 12px rgba(26,86,219,0.3)}
+.plan-name{font-size:1.4rem;font-weight:700;color:var(--navy);margin-bottom:8px}
+.plan-price{font-size:2.5rem;font-weight:700;color:var(--navy);margin-bottom:24px}
+.plan-price span{font-size:1rem;color:var(--muted);font-weight:400}
+.plan-features{list-style:none;padding:0;margin:0 0 32px}
+.plan-features li{padding:10px 0;color:var(--text);font-size:.9rem;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.plan-features li:last-child{border-bottom:none}
+.plan-features li i{color:var(--green);font-size:1rem}
+.plan-btn{width:100%;padding:14px;border-radius:10px;border:none;font-weight:600;font-size:1rem;cursor:pointer;transition:all var(--dur-fast) var(--ease-smooth);font-family:var(--font-body);position:relative;overflow:hidden}
+.plan-btn.primary{background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff;box-shadow:0 4px 16px rgba(26,86,219,0.3)}
+.plan-btn.primary:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(26,86,219,0.4)}
+.plan-btn.primary::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transition:left var(--dur-slow) var(--ease-smooth)}
+.plan-btn.primary:hover::after{left:100%}
+.plan-btn.ghost{background:transparent;color:var(--blue);border:2px solid var(--blue)}
+.plan-btn.ghost:hover{background:var(--blue);color:#fff}
+.page-footer{text-align:center;margin-top:60px;color:var(--muted)}
+.page-footer .benefits{display:flex;justify-content:center;gap:40px;flex-wrap:wrap}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="pricing-wrap">
+  <div class="pricing-header">
+    <h1>Choose Your Plan</h1>
+    <p>Start free and scale as you grow. No credit card required.</p>
+  </div>
+
+  <div class="pricing-grid">
+    {% for tier_key, tier in tiers.items() %}
+    <div class="plan-card {% if tier_key == 'professional' %}popular{% endif %}">
+      {% if tier_key == 'professional' %}
+      <div class="plan-badge">MOST POPULAR</div>
+      {% endif %}
+
+      <div class="plan-name">{{ tier.name }}</div>
+      <div class="plan-price">
+        {% if tier.price == 0 %}
+        Free
+        {% else %}
+        ₹{{ tier.price }}<span>/month</span>
+        {% endif %}
+      </div>
+
+      <ul class="plan-features">
+        {% for feature in tier.features %}
+        <li><i class="fas fa-check"></i>{{ feature }}</li>
+        {% endfor %}
+      </ul>
+
+      {% if tier_key == 'enterprise' %}
+      <button class="plan-btn primary" onclick="contactSales()">Contact Sales</button>
+      {% elif tier_key == 'free' %}
+      <button class="plan-btn ghost" onclick="selectTier('{{ tier_key }}')">Current Plan</button>
+      {% else %}
+      <button class="plan-btn primary" onclick="selectTier('{{ tier_key }}')">Upgrade to {{ tier.name }}</button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="page-footer">
+    <p>All plans include:</p>
+    <div class="benefits">
+      <span>✓ Secure data encryption</span>
+      <span>✓ 24/7 email support</span>
+      <span>✓ Cancel anytime</span>
+      <span>✓ No hidden fees</span>
+    </div>
+  </div>
+</div>
+
+<script>
+function selectTier(tier) {
+  if (tier === 'free') {
+    window.location.href = '/dashboard';
+    return;
+  }
+  alert(`${tier.charAt(0).toUpperCase() + tier.slice(1)} tier selected. Payment integration coming soon!`);
+}
+function contactSales() {
+  alert('Enterprise plan requires custom pricing. Please contact sales@offerflow.com');
+}
+</script>
+{% endblock %}

@@ -5,8 +5,17 @@
     "email": "admin@gmail.com",
     "password": "e86f78a8a3caf0b60d8e74e5942aa6d86dc150cd3c03338aef25b7d2d7e3acc7",
     "company_name": "Arah",
-    "letterhead": "uploads\\letterheads\\arah_letterhead.pdf",
-    "created_at": "2026-05-11 11:03:44.830340"
+    "letterhead": "c:/Users/santh/OneDrive/Desktop/OFFER_BGV (2)/OFFER_BGV/OFFER_BGV/uploads/letterheads/arah_letterhead.pdf",
+    "created_at": "2026-05-11 11:03:44.830340",
+    "subscription": {
+      "tier": "free",
+      "status": "active",
+      "offers_sent_this_month": 1,
+      "verifications_this_month": 0,
+      "billing_cycle_start": "2026-05-15",
+      "stripe_customer_id": null,
+      "stripe_subscription_id": null
+    }
   },
   "a07d48c8-6cb0-4256-ae54-05757b2c7a00": {
     "id": "a07d48c8-6cb0-4256-ae54-05757b2c7a00",
@@ -14,7 +23,52 @@
     "email": "uplanchiwarkarthika@gmail.com",
     "password": "c00fe3085917df19a0b7cdbf90eada2d776112833c6d821a452b0a031c613fa2",
     "company_name": "Arahinfotech",
-    "letterhead": "c:\\Users\\uplan\\OneDrive\\Desktop\\OFFER_BGV\\OFFER_BGV\\uploads\\letterheads\\arah_letterhead.pdf",
-    "created_at": "2026-05-13 18:41:14.685227"
+    "letterhead": "c:/Users/santh/OneDrive/Desktop/OFFER_BGV (2)/OFFER_BGV/OFFER_BGV/uploads/letterheads/arah_letterhead.pdf",
+    "created_at": "2026-05-13 18:41:14.685227",
+    "subscription": {
+      "tier": "free",
+      "status": "active",
+      "offers_sent_this_month": 0,
+      "verifications_this_month": 0,
+      "billing_cycle_start": "2026-05-15",
+      "stripe_customer_id": null,
+      "stripe_subscription_id": null
+    }
+  },
+  "87bd344c-19d6-4077-b567-9389a6d70b62": {
+    "id": "87bd344c-19d6-4077-b567-9389a6d70b62",
+    "username": "Testing",
+    "email": "yrishithareddy72@gmail.com",
+    "password": "b93b8f1c9265e846a8762f5d2a49cd031768bfc27f8850657763a0ddc4140ad9",
+    "company_name": "Arah",
+    "letterhead": "c:/Users/santh/OneDrive/Desktop/OFFER_BGV (2)/OFFER_BGV/OFFER_BGV/uploads/letterheads/arah_letterhead.pdf",
+    "created_at": "2026-05-15 08:40:30.774640",
+    "subscription": {
+      "tier": "free",
+      "status": "active",
+      "offers_sent_this_month": 0,
+      "verifications_this_month": 0,
+      "billing_cycle_start": "2026-05-15",
+      "stripe_customer_id": null,
+      "stripe_subscription_id": null
+    }
+  },
+  "6a3fbecf-a22c-4198-9ae3-82837ef3852b": {
+    "id": "6a3fbecf-a22c-4198-9ae3-82837ef3852b",
+    "username": "Sai",
+    "email": "saisanthoshig.10@gmail.com",
+    "password": "77dc23b387d4f7981f491d4ae8742ee43074bd025641621a99f383b064f5bb7d",
+    "company_name": "Arah",
+    "letterhead": "c:/Users/santh/OneDrive/Desktop/OFFER_BGV (2)/OFFER_BGV/OFFER_BGV/uploads/letterheads/arah_letterhead.pdf",
+    "created_at": "2026-05-16 15:50:58.270844",
+    "subscription": {
+      "tier": "free",
+      "status": "active",
+      "offers_sent_this_month": 0,
+      "verifications_this_month": 0,
+      "billing_cycle_start": "2026-05-16",
+      "stripe_customer_id": null,
+      "stripe_subscription_id": null
+    }
   }
 }

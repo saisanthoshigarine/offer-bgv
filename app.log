@@ -1,0 +1,309 @@
+2026-05-16 06:53:12,407 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.31.156:5000
+2026-05-16 06:53:12,408 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-05-16 06:53:12,411 - werkzeug - INFO -  * Restarting with stat
+2026-05-16 06:53:15,054 - werkzeug - WARNING -  * Debugger is active!
+2026-05-16 06:53:15,067 - werkzeug - INFO -  * Debugger PIN: 184-957-109
+2026-05-16 06:53:29,994 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:53:29] "GET / HTTP/1.1" 200 -
+2026-05-16 06:53:30,592 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:53:30] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-05-16 06:53:34,368 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:53:34] "GET /login HTTP/1.1" 200 -
+2026-05-16 06:53:45,506 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:53:45] "POST /api/login HTTP/1.1" 200 -
+2026-05-16 06:53:46,194 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:53:46] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 06:53:46,276 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:53:46] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:53:46,377 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:53:46] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:53:57,733 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:53:57] "[32mGET /logout HTTP/1.1[0m" 302 -
+2026-05-16 06:53:57,746 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:53:57] "GET / HTTP/1.1" 200 -
+2026-05-16 06:54:00,555 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:00] "GET /login HTTP/1.1" 200 -
+2026-05-16 06:54:15,124 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:15] "POST /api/login HTTP/1.1" 200 -
+2026-05-16 06:54:15,768 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:15] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 06:54:15,803 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:54:15,844 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:54:18,066 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:18] "GET /api/offers HTTP/1.1" 200 -
+2026-05-16 06:54:30,598 - __main__ - INFO - Offer cancelled for candidate 7ff04448-27f4-4a8c-a47c-7c04ec5741ef by user 87bd344c-19d6-4077-b567-9389a6d70b62
+2026-05-16 06:54:30,602 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:30] "POST /api/cancel-offer/7ff04448-27f4-4a8c-a47c-7c04ec5741ef HTTP/1.1" 200 -
+2026-05-16 06:54:30,632 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:30] "GET /api/offers HTTP/1.1" 200 -
+2026-05-16 06:54:30,634 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:30] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:54:30,665 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:30] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:54:37,142 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:37] "GET /api/offers?status=declined HTTP/1.1" 200 -
+2026-05-16 06:54:42,065 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:42] "GET /api/offers?status=accepted HTTP/1.1" 200 -
+2026-05-16 06:54:43,442 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:43] "GET /api/offers?status=declined HTTP/1.1" 200 -
+2026-05-16 06:54:45,815 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:54:45,838 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:54:48,263 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:48] "GET /api/offers?status=pending HTTP/1.1" 200 -
+2026-05-16 06:54:52,110 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:52] "GET /api/offers?status=cancelled HTTP/1.1" 200 -
+2026-05-16 06:54:53,867 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:53] "GET /api/verifications?status=verified HTTP/1.1" 200 -
+2026-05-16 06:54:55,218 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:55] "GET /api/verifications?status=rejected HTTP/1.1" 200 -
+2026-05-16 06:54:56,229 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:54:56] "GET /api/verifications?status=pending HTTP/1.1" 200 -
+2026-05-16 06:55:01,363 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:55:01] "[35m[1mGET /api/email-history HTTP/1.1[0m" 500 -
+2026-05-16 06:55:03,075 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:55:03] "[35m[1mGET /api/email-history HTTP/1.1[0m" 500 -
+2026-05-16 06:55:03,865 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:55:03] "[35m[1mGET /api/email-history HTTP/1.1[0m" 500 -
+2026-05-16 06:55:05,132 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:55:05] "GET /settings HTTP/1.1" 200 -
+2026-05-16 06:55:17,404 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:55:17] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:55:17,431 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:55:17] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:55:18,922 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:55:18] "[35m[1mGET /api/email-history HTTP/1.1[0m" 500 -
+2026-05-16 06:55:45,813 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:55:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:55:45,836 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:55:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:56:15,803 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:56:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:56:15,827 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:56:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:56:45,819 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:56:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:56:45,842 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:56:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:57:15,809 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:57:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:57:15,836 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:57:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:57:45,813 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:57:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:57:45,834 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:57:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:58:15,819 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:58:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:58:15,852 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:58:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:58:45,808 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:58:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:58:45,832 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:58:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:59:15,823 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:59:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:59:15,852 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:59:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:59:42,913 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:59:42] "[35m[1mGET /pricing HTTP/1.1[0m" 500 -
+2026-05-16 06:59:43,868 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:59:43] "GET /pricing?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+2026-05-16 06:59:43,870 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:59:43] "GET /pricing?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+2026-05-16 06:59:43,983 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:59:43] "GET /pricing?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+2026-05-16 06:59:51,630 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:59:51] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 06:59:51,654 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:59:51] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 06:59:57,853 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:59:57] "[35m[1mGET /pricing HTTP/1.1[0m" 500 -
+2026-05-16 06:59:57,882 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:59:57] "[36mGET /pricing?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2026-05-16 06:59:57,887 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 06:59:57] "[36mGET /pricing?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2026-05-16 07:00:01,831 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:00:01] "[35m[1mGET /pricing HTTP/1.1[0m" 500 -
+2026-05-16 07:00:01,853 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:00:01] "[36mGET /pricing?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2026-05-16 07:00:01,855 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:00:01] "[36mGET /pricing?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2026-05-16 07:00:15,802 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:00:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:00:15,835 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:00:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:00:45,804 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:00:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:00:45,832 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:00:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:01:15,808 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:01:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:01:15,836 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:01:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:01:45,806 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:01:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:01:45,835 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:01:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:02:15,819 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:02:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:02:15,845 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:02:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:02:45,809 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:02:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:02:45,844 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:02:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:03:12,488 - werkzeug - INFO -  * Detected change in 'C:\\Users\\USER\\Downloads\\OFFER_BGV\\OFFER_BGV\\app.py', reloading
+2026-05-16 07:03:12,705 - werkzeug - INFO -  * Restarting with stat
+2026-05-16 07:03:16,007 - werkzeug - WARNING -  * Debugger is active!
+2026-05-16 07:03:16,027 - werkzeug - INFO -  * Debugger PIN: 184-957-109
+2026-05-16 07:03:16,067 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:03:16] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:03:16,095 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:03:16] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:03:45,808 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:03:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:03:45,840 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:03:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:04:15,814 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:04:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:04:15,843 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:04:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:04:45,809 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:04:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:04:45,839 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:04:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:05:15,818 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:05:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:05:15,848 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:05:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:05:20,186 - werkzeug - INFO -  * Detected change in 'C:\\Users\\USER\\Downloads\\OFFER_BGV\\OFFER_BGV\\app.py', reloading
+2026-05-16 07:05:20,401 - werkzeug - INFO -  * Restarting with stat
+2026-05-16 07:05:23,736 - werkzeug - WARNING -  * Debugger is active!
+2026-05-16 07:05:23,751 - werkzeug - INFO -  * Debugger PIN: 184-957-109
+2026-05-16 07:05:45,821 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:05:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:05:45,845 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:05:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:06:15,804 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:06:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:06:15,830 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:06:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:06:45,817 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:06:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:06:45,843 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:06:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:07:15,810 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:07:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:07:15,834 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:07:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:07:45,820 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:07:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:07:45,842 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:07:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:08:15,817 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:08:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:08:15,843 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:08:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:08:45,813 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:08:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:08:45,835 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:08:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:09:15,819 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:09:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:09:15,846 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:09:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:09:45,816 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:09:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:09:45,844 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:09:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:10:15,808 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:10:15] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:10:15,907 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:10:15] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:10:16,691 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:10:16] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 07:10:16,745 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:10:16] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:10:16,814 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:10:16] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:10:19,852 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:10:19] "GET /pricing HTTP/1.1" 200 -
+2026-05-16 07:10:25,299 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:10:25] "GET /api/email-history HTTP/1.1" 200 -
+2026-05-16 07:10:46,756 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:10:46] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:10:46,784 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:10:46] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:11:16,755 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:11:16] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:11:16,786 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:11:16] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:11:46,749 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:11:46] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:11:46,778 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:11:46] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:12:16,746 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:12:16] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:12:16,779 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:12:16] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:12:46,748 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:12:46] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:12:46,775 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:12:46] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:13:16,760 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:13:16] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:13:16,797 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:13:16] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:13:46,750 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:13:46] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:13:46,778 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:13:46] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:14:16,758 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:14:16] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:14:16,789 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:14:16] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:14:46,758 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:14:46] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:14:46,797 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:14:46] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:15:17,024 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:15:17] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:15:17,046 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:15:17] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:15:47,021 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:15:47] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:15:47,064 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:15:47] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:16:48,022 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:16:48] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:16:48,045 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:16:48] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:17:49,026 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:17:49] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:17:49,048 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:17:49] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:18:50,020 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:18:50] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:18:50,050 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:18:50] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:19:51,018 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:19:51] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:19:51,044 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:19:51] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:20:52,024 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:20:52] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:20:52,053 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:20:52] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:21:53,016 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:21:53] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:21:53,036 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:21:53] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:22:54,020 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:22:54] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:22:54,044 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:22:54] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:23:55,026 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:23:55] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:23:55,058 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:23:55] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:24:56,034 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:24:56] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:24:56,065 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:24:56] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:25:57,016 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:25:57] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:25:57,041 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:25:57] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:26:58,028 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:26:58] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:26:58,055 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:26:58] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:27:59,034 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:27:59] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:27:59,063 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:27:59] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:29:00,020 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:29:00] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:29:00,057 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:29:00] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:30:01,012 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:30:01] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:30:01,036 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:30:01] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:31:02,018 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:31:02] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:31:02,045 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:31:02] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:32:03,030 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:32:03] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:32:03,053 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:32:03] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:33:04,016 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:33:04] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:33:04,034 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:33:04] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:34:05,017 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:34:05] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:34:05,037 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:34:05] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:35:06,021 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:35:06] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:35:06,042 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:35:06] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:36:07,017 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:36:07] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:36:07,043 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:36:07] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:37:08,030 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:37:08] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:37:08,060 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:37:08] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:38:08,020 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:38:08] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:38:08,049 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:38:08] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:39:08,023 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:39:08] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:39:08,047 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:39:08] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:40:08,024 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:40:08] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:40:08,051 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:40:08] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:41:08,034 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:41:08] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:41:08,065 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:41:08] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:42:08,094 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:42:08] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:42:08,124 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:42:08] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:43:08,023 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:43:08] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:43:08,050 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:43:08] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:44:08,016 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:44:08] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:44:08,042 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:44:08] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:54:20,859 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:54:20] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:54:20,900 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:54:20] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:54:22,636 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:54:22] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 07:54:22,698 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:54:22] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:54:22,768 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:54:22] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:54:23,880 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:54:23] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 07:54:23,932 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:54:23] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:54:23,990 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:54:23] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:54:47,598 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.31.156:5000
+2026-05-16 07:54:47,600 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-05-16 07:54:47,604 - werkzeug - INFO -  * Restarting with stat
+2026-05-16 07:54:51,108 - werkzeug - WARNING -  * Debugger is active!
+2026-05-16 07:54:51,119 - werkzeug - INFO -  * Debugger PIN: 184-957-109
+2026-05-16 07:54:56,632 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:54:56] "GET / HTTP/1.1" 200 -
+2026-05-16 07:54:57,241 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:54:57] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-05-16 07:55:03,121 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:55:03] "GET /login HTTP/1.1" 200 -
+2026-05-16 07:55:15,839 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:55:15] "POST /api/login HTTP/1.1" 200 -
+2026-05-16 07:55:16,507 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:55:16] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 07:55:16,557 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:55:16] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 07:55:16,682 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:55:16] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 07:55:19,241 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:55:19] "GET /api/offers HTTP/1.1" 200 -
+2026-05-16 07:55:23,296 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:55:23] "GET /api/offers?status=accepted HTTP/1.1" 200 -
+2026-05-16 07:55:24,696 - werkzeug - INFO - 192.168.31.156 - - [16/May/2026 07:55:24] "GET /api/offers?status=declined HTTP/1.1" 200 -
+2026-05-16 15:50:04,682 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.69:5000
+2026-05-16 15:50:04,682 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-05-16 15:50:04,714 - werkzeug - INFO -  * Restarting with stat
+2026-05-16 15:50:06,578 - werkzeug - WARNING -  * Debugger is active!
+2026-05-16 15:50:06,588 - werkzeug - INFO -  * Debugger PIN: 387-860-855
+2026-05-16 15:50:14,679 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:50:14] "GET / HTTP/1.1" 200 -
+2026-05-16 15:50:15,521 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:50:15] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-05-16 15:50:21,907 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:50:21] "GET /login HTTP/1.1" 200 -
+2026-05-16 15:50:58,290 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:50:58] "POST /api/register HTTP/1.1" 200 -
+2026-05-16 15:51:05,714 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:05] "POST /api/login HTTP/1.1" 200 -
+2026-05-16 15:51:06,435 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:06] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 15:51:06,766 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:06] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 15:51:06,840 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:06] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 15:51:10,238 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:10] "GET /pricing HTTP/1.1" 200 -
+2026-05-16 15:51:13,305 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:13] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 15:51:13,727 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:13] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 15:51:13,844 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:13] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 15:51:18,471 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:18] "GET /upload-excel HTTP/1.1" 200 -
+2026-05-16 15:51:27,983 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:27] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 15:51:28,536 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:28] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 15:51:33,905 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:33] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 15:51:41,546 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:51:41] "GET /upload-excel HTTP/1.1" 200 -
+2026-05-16 15:52:18,816 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:52:18] "POST /api/upload-excel HTTP/1.1" 200 -
+2026-05-16 15:52:26,264 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:52:26] "GET /api/patterns HTTP/1.1" 200 -
+2026-05-16 15:52:51,185 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:52:51] "GET /upload-excel HTTP/1.1" 200 -
+2026-05-16 15:52:52,459 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:52:52] "GET /upload-excel HTTP/1.1" 200 -
+2026-05-16 15:53:01,037 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:53:01] "GET / HTTP/1.1" 200 -
+2026-05-16 15:53:01,332 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:53:01] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-05-16 15:53:02,791 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:53:02] "GET /login HTTP/1.1" 200 -
+2026-05-16 15:53:04,605 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:53:04] "POST /api/login HTTP/1.1" 200 -
+2026-05-16 15:53:05,594 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:53:05] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 15:53:05,685 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:53:05] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 15:53:05,784 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:53:05] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 15:53:07,521 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:53:07] "GET /upload-excel HTTP/1.1" 200 -
+2026-05-16 15:53:34,189 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:53:34] "[31m[1mPOST /api/upload-excel HTTP/1.1[0m" 400 -
+2026-05-16 15:53:41,745 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:53:41] "POST /api/upload-excel HTTP/1.1" 200 -
+2026-05-16 15:53:58,831 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:53:58] "GET /api/patterns HTTP/1.1" 200 -
+2026-05-16 15:54:03,761 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:54:03] "POST /api/preview-letter HTTP/1.1" 200 -
+2026-05-16 15:54:08,271 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:54:08] "POST /api/save-candidates HTTP/1.1" 200 -
+2026-05-16 15:54:14,007 - __main__ - WARNING - Letterhead merge failed: Unable to get page count. Is poppler installed and in PATH?; using plain PDF
+2026-05-16 15:54:14,098 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:54:14] "POST /api/send-offer-emails HTTP/1.1" 200 -
+2026-05-16 15:54:15,985 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:54:15] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 15:54:16,098 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:54:16] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 15:54:16,241 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:54:16] "[35m[1mGET /api/subscription HTTP/1.1[0m" 500 -
+2026-05-16 15:54:17,297 - __main__ - INFO - Email sent to saisanthoshig.10@gmail.com
+2026-05-16 15:54:21,369 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:54:21] "GET /upload-excel HTTP/1.1" 200 -
+2026-05-16 15:54:21,565 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:54:21] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 15:54:21,603 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 15:54:21] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 15:56:29,008 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:56:29] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 15:56:29,233 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:56:29] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 15:56:30,204 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:56:30] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 15:56:33,413 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:56:33] "GET /settings HTTP/1.1" 200 -
+2026-05-16 15:56:42,082 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:56:42] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 15:56:42,190 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:56:42] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 15:56:42,225 - werkzeug - INFO - 192.168.1.69 - - [16/May/2026 15:56:42] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 16:00:27,978 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.69:5000
+2026-05-16 16:00:27,978 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-05-16 16:00:27,981 - werkzeug - INFO -  * Restarting with stat
+2026-05-16 16:00:31,027 - werkzeug - WARNING -  * Debugger is active!
+2026-05-16 16:00:31,041 - werkzeug - INFO -  * Debugger PIN: 387-860-855
+2026-05-16 16:00:34,650 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 16:00:34] "GET / HTTP/1.1" 200 -
+2026-05-16 16:00:34,975 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 16:00:34] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-05-16 16:00:36,982 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 16:00:36] "GET /login HTTP/1.1" 200 -
+2026-05-16 16:00:38,881 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 16:00:38] "POST /api/login HTTP/1.1" 200 -
+2026-05-16 16:00:41,934 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 16:00:41] "GET /dashboard HTTP/1.1" 200 -
+2026-05-16 16:00:45,109 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 16:00:45] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 16:00:45,535 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 16:00:45] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 16:01:16,480 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 16:01:16] "GET /api/dashboard-stats HTTP/1.1" 200 -
+2026-05-16 16:01:23,731 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 16:01:23] "GET /api/subscription HTTP/1.1" 200 -
+2026-05-16 16:01:39,821 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 16:01:39] "GET /pricing HTTP/1.1" 200 -
+2026-05-16 16:01:39,964 - werkzeug - INFO - 127.0.0.1 - - [16/May/2026 16:01:39] "GET /pricing HTTP/1.1" 200 -

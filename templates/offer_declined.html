@@ -4,12 +4,15 @@
 <title>Offer Declined — OfferFlow</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
+:root{--navy:#0d1b3e;--blue:#1a56db;--blue-l:#3b82f6;--teal:#0ea5e9;--green:#10b981;--gold:#f59e0b;--red:#ef4444;--bg:#f4f7fc;--surface:#ffffff;--surface-2:#f8faff;--border:rgba(0,0,0,0.07);--shadow-lg:0 12px 40px rgba(0,0,0,0.12);--shadow-red:0 8px 32px rgba(239,68,68,0.2);--font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;--ease-smooth:cubic-bezier(0.4,0,0.2,1);--dur-slow:600ms}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:linear-gradient(135deg,#fff1f2,#fee2e2);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:#fff;border-radius:20px;padding:60px 48px;max-width:480px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.08)}
-.icon{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:2rem;color:#fff}
-h1{font-family:'DM Serif Display',serif;font-size:2rem;color:#991b1b;margin-bottom:12px}
-p{color:#64748b;line-height:1.7}
+body{font-family:var(--font-body);background:linear-gradient(135deg,#fff1f2,#fee2e2);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--surface);border-radius:24px;padding:60px 48px;max-width:480px;width:100%;text-align:center;box-shadow:var(--shadow-lg);border:1px solid var(--border);animation:respectfulFade 1s var(--ease-smooth) backwards}
+@keyframes respectfulFade{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.icon{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--red),#dc2626);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:2rem;color:#fff;animation:iconFade 0.8s var(--ease-smooth) 0.3s backwards;box-shadow:0 8px 32px rgba(239,68,68,0.25)}
+@keyframes iconFade{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
+h1{font-family:var(--font-display);font-size:2rem;color:#991b1b;margin-bottom:12px;animation:respectfulFade 0.8s var(--ease-smooth) 0.4s backwards}
+p{color:#64748b;line-height:1.7;animation:respectfulFade 0.8s var(--ease-smooth) 0.5s backwards}
 </style>
 </head>
 <body>

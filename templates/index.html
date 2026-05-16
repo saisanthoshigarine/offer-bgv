@@ -3,69 +3,89 @@
 {% block head %}
 <style>
 /* ── Hero ── */
-.hero-wrap{min-height:100vh;background:linear-gradient(135deg,#0d1b3e 0%,#1a3a7a 60%,#0ea5e9 100%);position:relative;overflow:hidden;display:flex;flex-direction:column}
+.hero-wrap{min-height:100vh;background:var(--grad-hero);position:relative;overflow:hidden;display:flex;flex-direction:column}
 .hero-wrap::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.hero-shape{position:absolute;border-radius:50%;opacity:.04;animation:float 20s infinite ease-in-out}
+.hero-shape-1{width:300px;height:300px;background:var(--teal);top:10%;left:10%;animation-delay:0s}
+.hero-shape-2{width:200px;height:200px;background:var(--blue);top:60%;right:15%;animation-delay:-5s}
+.hero-shape-3{width:150px;height:150px;background:var(--gold);bottom:20%;left:30%;animation-delay:-10s}
+@keyframes float{0%,100%{transform:translate(0,0)}25%{transform:translate(20px,-20px)}50%{transform:translate(-10px,20px)}75%{transform:translate(15px,10px)}}
+
 .nav{display:flex;align-items:center;justify-content:space-between;padding:20px 60px;position:relative;z-index:10}
-.logo{display:flex;align-items:center;gap:12px;color:#fff;font-family:'DM Serif Display',serif;font-size:1.6rem}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;font-family:var(--font-display);font-size:1.6rem}
 .logo-icon{width:42px;height:42px;background:linear-gradient(135deg,var(--teal),var(--blue-l));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
 .hero-body{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:60px 24px 80px;position:relative;z-index:5}
 .hero-content{max-width:780px}
-.hero-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);color:#e0f2fe;padding:8px 18px;border-radius:40px;font-size:.85rem;font-weight:600;margin-bottom:28px;border:1px solid rgba(255,255,255,.2)}
-.hero-h1{font-family:'DM Serif Display',serif;font-size:clamp(2.4rem,6vw,4.2rem);color:#fff;line-height:1.1;margin-bottom:24px}
+.hero-pill{display:inline-flex;align-items:center;gap:8px;background:var(--glass);color:#e0f2fe;padding:8px 18px;border-radius:40px;font-size:.85rem;font-weight:600;margin-bottom:28px;border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(10px);animation:fadeSlideUp var(--dur-normal) var(--ease-spring) backwards}
+.hero-h1{font-family:var(--font-display);font-size:clamp(2.4rem,6vw,4.2rem);color:#fff;line-height:1.1;margin-bottom:24px}
 .hero-h1 em{color:var(--teal);font-style:normal}
-.hero-sub{font-size:1.1rem;color:rgba(255,255,255,.75);max-width:560px;margin:0 auto 40px;font-weight:400}
-.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
-.btn-hero-primary{background:#fff;color:var(--navy);font-weight:700;padding:14px 36px;border-radius:10px;border:none;cursor:pointer;font-size:1rem;transition:all .2s;font-family:'DM Sans',sans-serif}
+.hero-sub{font-size:1.1rem;color:rgba(255,255,255,.75);max-width:560px;margin:0 auto 40px;font-weight:400;animation:fadeSlideUp var(--dur-normal) var(--ease-spring) backwards;animation-delay:100ms}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;animation:fadeSlideUp var(--dur-normal) var(--ease-spring) backwards;animation-delay:200ms}
+.btn-hero-primary{background:#fff;color:var(--navy);font-weight:700;padding:14px 36px;border-radius:10px;border:none;cursor:pointer;font-size:1rem;transition:all var(--dur-fast) var(--ease-smooth);font-family:var(--font-body);position:relative;overflow:hidden}
 .btn-hero-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(255,255,255,.25)}
-.btn-hero-ghost{background:transparent;color:#fff;font-weight:600;padding:14px 36px;border-radius:10px;border:2px solid rgba(255,255,255,.4);cursor:pointer;font-size:1rem;transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn-hero-primary::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(26,86,219,.2),transparent);transition:left var(--dur-slow) var(--ease-smooth)}
+.btn-hero-primary:hover::after{left:100%}
+.btn-hero-ghost{background:transparent;color:#fff;font-weight:600;padding:14px 36px;border-radius:10px;border:2px solid rgba(255,255,255,.4);cursor:pointer;font-size:1rem;transition:all var(--dur-fast) var(--ease-smooth);font-family:var(--font-body)}
 .btn-hero-ghost:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.7)}
 
 /* ── Stats bar ── */
-.stats-bar{background:rgba(255,255,255,.06);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.1);padding:28px 60px;display:flex;gap:48px;justify-content:center;flex-wrap:wrap;position:relative;z-index:5}
-.stat-item{text-align:center;color:#fff}
-.stat-num{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--teal)}
+.stats-bar{background:var(--glass);backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,.1);padding:28px 60px;display:flex;gap:48px;justify-content:center;flex-wrap:wrap;position:relative;z-index:5}
+.stat-item{text-align:center;color:#fff;animation:fadeSlideUp var(--dur-normal) var(--ease-spring) backwards}
+.stat-item:nth-child(1){animation-delay:300ms}
+.stat-item:nth-child(2){animation-delay:360ms}
+.stat-item:nth-child(3){animation-delay:420ms}
+.stat-item:nth-child(4){animation-delay:480ms}
+.stat-num{font-family:var(--font-display);font-size:2rem;color:var(--teal)}
 .stat-lbl{font-size:.8rem;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em}
 
 /* ── Features ── */
-.features{padding:96px 60px;background:#fff}
+.features{padding:96px 60px;background:var(--surface)}
 .section-tag{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);margin-bottom:12px}
-.section-h{font-family:'DM Serif Display',serif;font-size:clamp(1.8rem,4vw,3rem);color:var(--navy);margin-bottom:16px}
+.section-h{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,3rem);color:var(--navy);margin-bottom:16px}
 .section-sub{color:var(--muted);font-size:1rem;max-width:500px}
 .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px;margin-top:60px}
-.feat-card{border-radius:16px;padding:32px;border:1px solid var(--border);transition:all .3s;position:relative;overflow:hidden}
-.feat-card:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(26,86,219,.1);border-color:var(--blue)}
+.feat-card{background:var(--grad-card);border-radius:16px;padding:32px;border:1px solid var(--border);transition:all var(--dur-normal) var(--ease-smooth);position:relative;overflow:hidden;box-shadow:var(--shadow-sm)}
+.feat-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-blue);border-color:var(--blue)}
 .feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--blue),var(--teal))}
-.feat-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:20px}
+.feat-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:20px;transition:transform var(--dur-normal) var(--ease-spring)}
+.feat-card:hover .feat-icon{transform:rotate(5deg)}
 .feat-h{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:10px}
 .feat-p{color:var(--muted);font-size:.9rem;line-height:1.7}
 
 /* ── How it works ── */
 .how{padding:96px 60px;background:var(--bg)}
 .steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px;margin-top:60px;position:relative}
-.step{text-align:center;position:relative}
-.step-num{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff;font-family:'DM Serif Display',serif;font-size:1.4rem;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.step{text-align:center;position:relative;animation:fadeSlideUp var(--dur-normal) var(--ease-spring) backwards}
+.step:nth-child(1){animation-delay:0ms}
+.step:nth-child(2){animation-delay:100ms}
+.step:nth-child(3){animation-delay:200ms}
+.step:nth-child(4){animation-delay:300ms}
+.step-num{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff;font-family:var(--font-display);font-size:1.4rem;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;transition:transform var(--dur-fast) var(--ease-spring)}
+.step:hover .step-num{transform:scale(1.15)}
 .step-h{font-weight:700;font-size:1rem;color:var(--navy);margin-bottom:8px}
 .step-p{color:var(--muted);font-size:.85rem}
-.step-connector{position:absolute;top:28px;left:calc(50% + 32px);width:calc(100% - 64px);height:2px;background:linear-gradient(90deg,var(--blue),var(--teal));opacity:.3}
+.step-connector{position:absolute;top:28px;left:calc(50% + 32px);width:calc(100% - 64px);height:2px;background:linear-gradient(90deg,var(--blue),var(--teal));opacity:.3;animation:lineGrow 800ms var(--ease-smooth) forwards;transform-origin:left;transform:scaleX(0)}
+@keyframes lineGrow{to{transform:scaleX(1)}}
 
 /* ── CTA ── */
-.cta{background:linear-gradient(135deg,var(--navy),#1a3a7a);padding:80px 60px;text-align:center;color:#fff}
-.cta h2{font-family:'DM Serif Display',serif;font-size:2.5rem;margin-bottom:16px}
-.cta p{color:rgba(255,255,255,.7);margin-bottom:36px;font-size:1rem}
+.cta{background:linear-gradient(135deg,var(--navy),#1a3a7a);padding:80px 60px;text-align:center;color:#fff;position:relative;overflow:hidden}
+.cta-particle{position:absolute;width:4px;height:4px;background:rgba(255,255,255,.2);border-radius:50%;animation:particleDrift 15s infinite linear}
+@keyframes particleDrift{0%{transform:translate(0,0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translate(var(--tx),var(--ty));opacity:0}}
+.cta h2{font-family:var(--font-display);font-size:2.5rem;margin-bottom:16px;position:relative;z-index:1}
+.cta p{color:rgba(255,255,255,.7);margin-bottom:36px;font-size:1rem;position:relative;z-index:1}
 
 /* ── Footer ── */
 .footer{background:var(--navy);padding:32px 60px;text-align:center;color:rgba(255,255,255,.4);font-size:.85rem}
-
-/* ── Animations ── */
-@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
-.hero-content>*{animation:fadeUp .7s ease both}
-.hero-pill{animation-delay:.1s}.hero-h1{animation-delay:.2s}.hero-sub{animation-delay:.3s}.hero-btns{animation-delay:.4s}
 
 @media(max-width:768px){.nav{padding:16px 24px}.features,.how,.cta{padding:64px 24px}.stats-bar{gap:24px;padding:20px 24px}}
 </style>
 {% endblock %}
 {% block body %}
 <div class="hero-wrap">
+  <div class="hero-shape hero-shape-1"></div>
+  <div class="hero-shape hero-shape-2"></div>
+  <div class="hero-shape hero-shape-3"></div>
+  
   <nav class="nav">
     <div class="logo">
       <div class="logo-icon"><i class="fas fa-file-contract" style="color:#fff"></i></div>
@@ -87,9 +107,9 @@
   </div>
 
   <div class="stats-bar">
-    <div class="stat-item"><div class="stat-num">10K+</div><div class="stat-lbl">Offers Sent</div></div>
-    <div class="stat-item"><div class="stat-num">98%</div><div class="stat-lbl">Delivery Rate</div></div>
-    <div class="stat-item"><div class="stat-num">500+</div><div class="stat-lbl">Companies</div></div>
+    <div class="stat-item"><div class="stat-num" data-counter="10000">10K+</div><div class="stat-lbl">Offers Sent</div></div>
+    <div class="stat-item"><div class="stat-num" data-counter="98">98%</div><div class="stat-lbl">Delivery Rate</div></div>
+    <div class="stat-item"><div class="stat-num" data-counter="500">500+</div><div class="stat-lbl">Companies</div></div>
     <div class="stat-item"><div class="stat-num">48h</div><div class="stat-lbl">Auto Expiry</div></div>
   </div>
 </div>
@@ -97,36 +117,36 @@
 <!-- Features -->
 <section class="features" id="features">
   <div style="max-width:1200px;margin:auto">
-    <p class="section-tag">Features</p>
-    <h2 class="section-h">Everything you need to hire smarter</h2>
-    <p class="section-sub">A complete platform that handles every step of the post-selection hiring process.</p>
+    <p class="section-tag animate-on-scroll">Features</p>
+    <h2 class="section-h animate-on-scroll">Everything you need to hire smarter</h2>
+    <p class="section-sub animate-on-scroll">A complete platform that handles every step of the post-selection hiring process.</p>
     <div class="features-grid">
-      <div class="feat-card">
+      <div class="feat-card animate-on-scroll">
         <div class="feat-icon" style="background:#dbeafe"><i class="fas fa-file-alt" style="color:var(--blue)"></i></div>
         <div class="feat-h">Offer Letter Generator</div>
         <p class="feat-p">Upload your candidate excel, choose a template, preview and send branded offer letters in minutes with accept/decline links.</p>
       </div>
-      <div class="feat-card">
+      <div class="feat-card animate-on-scroll">
         <div class="feat-icon" style="background:#d1fae5"><i class="fas fa-shield-alt" style="color:var(--green)"></i></div>
         <div class="feat-h">Background Verification</div>
         <p class="feat-p">3-step verification for accepted candidates — personal info, education, and employment history with automated company email checks.</p>
       </div>
-      <div class="feat-card">
+      <div class="feat-card animate-on-scroll">
         <div class="feat-icon" style="background:#fef3c7"><i class="fas fa-chart-bar" style="color:var(--gold)"></i></div>
         <div class="feat-h">Live Dashboard</div>
         <p class="feat-p">Real-time stats on offer acceptance, declinations, pending actions, and verification statuses — all in one clean dashboard.</p>
       </div>
-      <div class="feat-card">
+      <div class="feat-card animate-on-scroll">
         <div class="feat-icon" style="background:#ede9fe"><i class="fas fa-clock" style="color:#7c3aed"></i></div>
         <div class="feat-h">Auto Expiry (48h)</div>
         <p class="feat-p">Candidates who don't respond within 48 hours are automatically moved to "Cancelled" status with zero manual effort.</p>
       </div>
-      <div class="feat-card">
+      <div class="feat-card animate-on-scroll">
         <div class="feat-icon" style="background:#fee2e2"><i class="fas fa-envelope" style="color:var(--red)"></i></div>
         <div class="feat-h">Automated Emails</div>
         <p class="feat-p">Smart emails for offer dispatch, verification requests to previous employers, and final selection/rejection notifications.</p>
       </div>
-      <div class="feat-card">
+      <div class="feat-card animate-on-scroll">
         <div class="feat-icon" style="background:#e0f2fe"><i class="fas fa-file-excel" style="color:var(--teal)"></i></div>
         <div class="feat-h">Excel Import/Export</div>
         <p class="feat-p">Upload candidate data via .xlsx, validate required columns, and export offer status reports with one click.</p>
@@ -138,8 +158,8 @@
 <!-- How it works -->
 <section class="how">
   <div style="max-width:1200px;margin:auto;text-align:center">
-    <p class="section-tag">Process</p>
-    <h2 class="section-h">How OfferFlow Works</h2>
+    <p class="section-tag animate-on-scroll">Process</p>
+    <h2 class="section-h animate-on-scroll">How OfferFlow Works</h2>
     <div class="steps-grid">
       <div class="step">
         <div class="step-num">1</div>
@@ -169,7 +189,13 @@
 </section>
 
 <!-- CTA -->
-<section class="cta">
+<section class="cta" id="cta">
+  <div class="cta-particle" style="--tx:100px;--ty:-50px;top:20%;left:10%"></div>
+  <div class="cta-particle" style="--tx:-80px;--ty:60px;top:40%;right:15%"></div>
+  <div class="cta-particle" style="--tx:50px;--ty:-80px;bottom:30%;left:20%"></div>
+  <div class="cta-particle" style="--tx:-60px;--ty:40px;bottom:20%;right:25%"></div>
+  <div class="cta-particle" style="--tx:30px;--ty:-30px;top:60%;left:40%"></div>
+  <div class="cta-particle" style="--tx:-40px;--ty:50px;top:30%;right:30%"></div>
   <h2>Ready to streamline your hiring?</h2>
   <p>Join hundreds of companies using OfferFlow for smarter, faster hiring.</p>
   <button class="btn-hero-primary" onclick="location.href='/login'">Start for Free — It's Quick</button>
