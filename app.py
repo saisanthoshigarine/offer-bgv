@@ -24,9 +24,6 @@ from reportlab.pdfgen import canvas as rlc
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 
-# Stripe / payments
-import stripe
-
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
@@ -71,53 +68,6 @@ BASE_URL      = os.environ.get('BASE_URL', 'http://localhost:5000')
 BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
 SENDER_EMAIL  = os.environ.get('SENDER_EMAIL')
 SENDER_NAME   = os.environ.get('SENDER_NAME')
-STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
-STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
-
-# Configure Stripe
-stripe.api_key = STRIPE_SECRET_KEY
-
-# ── Subscription Tiers Configuration ────────────────────────────────────────────
-SUBSCRIPTION_TIERS = {
-    'free': {
-        'name': 'Free',
-        'price': 0,
-        'currency': 'INR',
-        'offers_per_month': 10,
-        'verifications_per_month': 5,
-        'hr_users_limit': 1,
-        'features': ['Basic offer letters', 'Email notifications', '5 background verifications/month']
-    },
-    'starter': {
-        'name': 'Starter',
-        'price': 1999,
-        'currency': 'INR',
-        'stripe_price_id': 'price_starter_id',  # Will be set after creating in Stripe
-        'offers_per_month': 50,
-        'verifications_per_month': 25,
-        'hr_users_limit': 3,
-        'features': ['50 offer letters/month', '25 background verifications/month', '3 HR users', 'Priority support', 'Custom letterhead']
-    },
-    'professional': {
-        'name': 'Professional',
-        'price': 4999,
-        'currency': 'INR',
-        'stripe_price_id': 'price_professional_id',
-        'offers_per_month': 200,
-        'verifications_per_month': 100,
-        'hr_users_limit': 10,
-        'features': ['200 offer letters/month', '100 background verifications/month', '10 HR users', 'Priority support', 'Custom letterhead', 'Advanced analytics']
-    },
-    'enterprise': {
-        'name': 'Enterprise',
-        'price': 0,  # Custom pricing
-        'currency': 'INR',
-        'offers_per_month': -1,  # Unlimited
-        'verifications_per_month': -1,
-        'hr_users_limit': -1,
-        'features': ['Unlimited everything', 'Unlimited HR users', 'Dedicated support', 'API access', 'Custom integrations', 'White-label option']
-    }
-}
 
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 
@@ -213,9 +163,6 @@ def init_data():
 init_data()
 
 
-
-
-
 # ── JSON helpers ──────────────────────────────────────────────────────────────
 def load_json(path):
     return json.load(open(path)) if os.path.exists(path) else {}
@@ -248,161 +195,6 @@ def validate_password(pw):
 def current_user():
     uid = session.get('user_id')
     return get_users().get(uid) if uid else None
-
-
-# ── Subscription Helper Functions ───────────────────────────────────────────────
-def get_user_subscription(user_id):
-    users = get_users()
-    user = users.get(user_id)
-    if not user:
-        return None
-    return user.get('subscription', {})
-
-def check_usage_limit(user_id, action='offer'):
-    user = get_users().get(user_id)
-    if not user:
-        return False, 'User not found'
-    
-    sub = user.get('subscription', {})
-    tier = sub.get('tier', 'free')
-    tier_config = SUBSCRIPTION_TIERS.get(tier, SUBSCRIPTION_TIERS['free'])
-    
-    # Reset monthly counters if billing cycle has passed
-    billing_start = sub.get('billing_cycle_start', '2026-05-15')
-    today = datetime.now().strftime('%Y-%m-%d')
-    
-    # Simple monthly reset (in production, use proper date comparison)
-    if billing_start != today and today.endswith('-01'):
-        # Reset counters on first day of month
-        users = get_users()
-        users[user_id]['subscription']['offers_sent_this_month'] = 0
-        users[user_id]['subscription']['verifications_this_month'] = 0
-        users[user_id]['subscription']['billing_cycle_start'] = today
-        save_users(users)
-        sub = users[user_id]['subscription']
-    
-    if action == 'offer':
-        limit = tier_config['offers_per_month']
-        if limit == -1:  # Unlimited
-            return True, None
-        used = sub.get('offers_sent_this_month', 0)
-        if used >= limit:
-            return False, f'Monthly offer limit reached ({limit}/{limit}). Upgrade to send more.'
-        return True, None
-    
-    elif action == 'verification':
-        limit = tier_config['verifications_per_month']
-        if limit == -1:  # Unlimited
-            return True, None
-        used = sub.get('verifications_this_month', 0)
-        if used >= limit:
-            return False, f'Monthly verification limit reached ({limit}/{limit}). Upgrade to verify more.'
-        return True, None
-    
-    return True, None
-
-def increment_usage(user_id, action='offer'):
-    users = get_users()
-    user = users.get(user_id)
-    if not user:
-        return False
-    
-    if 'subscription' not in user:
-        user['subscription'] = {
-            'tier': 'free',
-            'status': 'active',
-            'offers_sent_this_month': 0,
-            'verifications_this_month': 0,
-            'billing_cycle_start': datetime.now().strftime('%Y-%m-%d'),
-            'stripe_customer_id': None,
-            'stripe_subscription_id': None
-        }
-    
-    if action == 'offer':
-        user['subscription']['offers_sent_this_month'] = user['subscription'].get('offers_sent_this_month', 0) + 1
-    elif action == 'verification':
-        user['subscription']['verifications_this_month'] = user['subscription'].get('verifications_this_month', 0) + 1
-    
-    users[user_id] = user
-    save_users(users)
-    return True
-
-
-# ── Email via Brevo API ───────────────────────────────────────────────────────
-def send_email(to, subject, html_body, attach_path=None, attach_name=None, user_id=None, candidate_id=None, email_type='offer'):
-    if not BREVO_API_KEY:
-        logger.error('BREVO_API_KEY is not set — check your .env file')
-        return False
-    
-    email_id = str(uuid.uuid4())
-    success = False
-    error_msg = None
-    
-    try:
-        configuration = sib_api_v3_sdk.Configuration()
-        configuration.api_key['api-key'] = BREVO_API_KEY
-
-        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
-            sib_api_v3_sdk.ApiClient(configuration)
-        )
-
-        attachments = []
-        if attach_path and os.path.exists(attach_path):
-            with open(attach_path, 'rb') as f:
-                encoded_file = base64.b64encode(f.read()).decode()
-            attachments.append({
-                'content': encoded_file,
-                'name': attach_name or 'offer_letter.pdf'
-            })
-
-        email_params = {
-            'to': [{'email': to}],
-            'sender': {'name': SENDER_NAME, 'email': SENDER_EMAIL},
-            'subject': subject,
-            'html_content': html_body
-        }
-        if attachments:
-            email_params['attachment'] = attachments
-
-        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(**email_params)
-
-        api_instance.send_transac_email(send_smtp_email)
-        logger.info(f'Email sent to {to}')
-        success = True
-
-    except ApiException as e:
-        logger.error(f'Brevo API error: {e}')
-        error_msg = str(e)
-    except Exception as e:
-        logger.error(f'General email error: {e}')
-        error_msg = str(e)
-    
-    # Log email to history
-    history = get_email_history()
-    history[email_id] = {
-        'id': email_id,
-        'user_id': user_id,
-        'candidate_id': candidate_id,
-        'email_type': email_type,
-        'to': to,
-        'subject': subject,
-        'sent_at': str(datetime.now()),
-        'status': 'sent' if success else 'failed',
-        'error': error_msg,
-        'has_attachment': bool(attach_path)
-    }
-    save_email_history(history)
-    
-    return success
-
-
-def send_async(to, subject, html, attach_path=None, attach_name=None, user_id=None, candidate_id=None, email_type='offer'):
-    t = threading.Thread(
-        target=send_email,
-        args=(to, subject, html, attach_path, attach_name, user_id, candidate_id, email_type),
-        daemon=True
-    )
-    t.start()
 
 
 #-------------------------patterns for offer letter designs-------------------------
@@ -812,7 +604,7 @@ def _merge_letterhead(lh_path, content_bytes, out_path):
 #  PREVIEW HTML  (pattern-aware, letterhead as background)
 def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_text=''):
     company  = hr_user['company_name']
-    lh_path  = _resolve_lh_path(hr_user.get('letterhead', ''))   # ← use resolver
+    lh_path  = _resolve_lh_path(hr_user.get('letterhead', ''))
     today    = datetime.now().strftime('%d %B %Y')
     name     = candidate.get('name', '')
     role     = candidate.get('role', '')
@@ -1164,10 +956,10 @@ def api_login():
     data = request.json or {}
     username = sanitize_string(data.get('username', ''))
     password = data.get('password', '')
-    
+
     if not username or not password:
         return jsonify({'success': False, 'message': 'Username and password are required'}), 400
-    
+
     user = next((u for u in get_users().values()
                  if u['username'] == username
                  and u['password'] == hash_pw(password)), None)
@@ -1185,29 +977,24 @@ def api_register():
     password     = request.form.get('password', '')
     confirm      = request.form.get('confirm_password', '')
     company_name = sanitize_string(request.form.get('company_name', ''))
-    
-    # Validate required fields
+
     if not all([username, email, password, confirm, company_name]):
         return jsonify({'success': False, 'message': 'All fields are required'}), 400
-    
-    # Validate email format
+
     if not validate_email(email):
         return jsonify({'success': False, 'message': 'Invalid email format'}), 400
-    
-    # Check for duplicates
+
     if any(u['username'] == username for u in users.values()):
         return jsonify({'success': False, 'message': 'Username already exists'}), 400
     if any(u['email'] == email for u in users.values()):
         return jsonify({'success': False, 'message': 'Email already registered'}), 400
-    
-    # Validate password
+
     if password != confirm:
         return jsonify({'success': False, 'message': 'Passwords do not match'}), 400
     if not validate_password(password):
         return jsonify({'success': False, 'message':
             'Password needs 8+ chars, uppercase, lowercase & special character'}), 400
-    
-    # Validate letterhead file
+
     lh = request.files.get('letterhead')
     if not lh or not lh.filename:
         return jsonify({'success': False, 'message': 'Company letterhead (PDF) is required'}), 400
@@ -1215,11 +1002,10 @@ def api_register():
         return jsonify({'success': False, 'message': 'Letterhead must be a PDF file'}), 400
     if not validate_file_size(lh, max_size_mb=5):
         return jsonify({'success': False, 'message': 'Letterhead file size must be less than 5MB'}), 400
-    
+
     fname   = secure_filename(lh.filename)
     lh_path = os.path.join(UPLOAD_DIR, 'letterheads', fname)
     lh.save(lh_path)
-    # Also save to project uploads so it persists across restarts
     project_lh = os.path.join(BASE_DIR, 'uploads', 'letterheads', fname)
     if not os.path.exists(project_lh):
         shutil.copy2(lh_path, project_lh)
@@ -1232,15 +1018,6 @@ def api_register():
         'company_name': company_name,
         'letterhead': lh_path,
         'created_at': str(datetime.now()),
-        'subscription': {
-            'tier': 'free',
-            'status': 'active',
-            'offers_sent_this_month': 0,
-            'verifications_this_month': 0,
-            'billing_cycle_start': datetime.now().strftime('%Y-%m-%d'),
-            'stripe_customer_id': None,
-            'stripe_subscription_id': None
-        }
     }
     save_users(users)
     return jsonify({'success': True})
@@ -1248,13 +1025,13 @@ def api_register():
 @app.route('/api/forgot-password', methods=['POST'])
 def api_forgot_password():
     email = sanitize_string((request.json or {}).get('email', ''))
-    
+
     if not email:
         return jsonify({'success': False, 'message': 'Email is required'}), 400
-    
+
     if not validate_email(email):
         return jsonify({'success': False, 'message': 'Invalid email format'}), 400
-    
+
     user = next((u for u in get_users().values() if u['email'] == email), None)
     if not user:
         return jsonify({'success': False, 'message': 'Email not found'}), 404
@@ -1469,12 +1246,7 @@ def api_send_offer_emails():
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-    
-    # Check usage limit before sending
-    can_send, error_msg = check_usage_limit(u['id'], 'offer')
-    if not can_send:
-        return jsonify({'success': False, 'message': error_msg}), 429
-    
+
     data  = request.json or {}
     cids  = data.get('candidate_ids', [])
     cands = get_cands()
@@ -1486,12 +1258,6 @@ def api_send_offer_emails():
         if c.get('email_sent_at'):
             logger.info(f'Email already sent to {c["email"]}')
             continue
-        
-        # Check limit for each candidate
-        can_send, error_msg = check_usage_limit(u['id'], 'offer')
-        if not can_send:
-            break
-        
         accept_link  = f"{BASE_URL}/offer-response/{cid}/accept"
         decline_link = f"{BASE_URL}/offer-response/{cid}/decline"
         pattern_key  = c.get('pattern', 'classic')
@@ -1512,10 +1278,7 @@ def api_send_offer_emails():
             email_type='offer')
         cands[cid]['email_sent_at'] = str(datetime.now())
         sent += 1
-        
-        # Increment usage counter
-        increment_usage(u['id'], 'offer')
-    
+
     save_cands(cands)
     return jsonify({'success': True, 'sent': sent})
 
@@ -1766,13 +1529,6 @@ def download_template():
     df.to_excel(path, index=False)
     return send_file(path, as_attachment=True, download_name='offers_export.xlsx')
 
-
-# ── Subscription Management Routes ───────────────────────────────────────────────
-@app.route('/pricing')
-def pricing():
-    u=current_user()
-    return render_template('pricing.html', user=u, tiers=SUBSCRIPTION_TIERS)
-
 @app.route('/settings')
 def settings_page():
     if not current_user():
@@ -1791,25 +1547,25 @@ def api_update_profile():
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-    
+
     data = request.json or {}
     email = sanitize_string(data.get('email', ''))
     company_name = sanitize_string(data.get('company_name', ''))
-    
+
     if not email or not company_name:
         return jsonify({'success': False, 'message': 'All fields are required'}), 400
-    
+
     if not validate_email(email):
         return jsonify({'success': False, 'message': 'Invalid email format'}), 400
-    
+
     users = get_users()
     if email != u['email'] and any(u['email'] == email for u in users.values()):
         return jsonify({'success': False, 'message': 'Email already registered'}), 400
-    
+
     users[u['id']]['email'] = email
     users[u['id']]['company_name'] = company_name
     save_users(users)
-    
+
     logger.info(f'User {u["id"]} updated profile')
     return jsonify({'success': True})
 
@@ -1818,25 +1574,25 @@ def api_change_password():
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-    
+
     data = request.json or {}
     current_password = data.get('current_password', '')
     new_password = data.get('new_password', '')
-    
+
     if not current_password or not new_password:
         return jsonify({'success': False, 'message': 'All fields are required'}), 400
-    
+
     if u['password'] != hash_pw(current_password):
         return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
-    
+
     if not validate_password(new_password):
-        return jsonify({'success': False, 'message': 
+        return jsonify({'success': False, 'message':
             'Password needs 8+ chars, uppercase, lowercase & special character'}), 400
-    
+
     users = get_users()
     users[u['id']]['password'] = hash_pw(new_password)
     save_users(users)
-    
+
     logger.info(f'User {u["id"]} changed password')
     return jsonify({'success': True})
 
@@ -1845,7 +1601,7 @@ def api_update_letterhead():
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-    
+
     lh = request.files.get('letterhead')
     if not lh or not lh.filename:
         return jsonify({'success': False, 'message': 'Letterhead file is required'}), 400
@@ -1853,20 +1609,19 @@ def api_update_letterhead():
         return jsonify({'success': False, 'message': 'Letterhead must be a PDF file'}), 400
     if not validate_file_size(lh, max_size_mb=5):
         return jsonify({'success': False, 'message': 'Letterhead file size must be less than 5MB'}), 400
-    
+
     fname = secure_filename(lh.filename)
     lh_path = os.path.join(UPLOAD_DIR, 'letterheads', fname)
     lh.save(lh_path)
-    
-    # Also save to project uploads so it persists across restarts
+
     project_lh = os.path.join(BASE_DIR, 'uploads', 'letterheads', fname)
     if not os.path.exists(project_lh):
         shutil.copy2(lh_path, project_lh)
-    
+
     users = get_users()
     users[u['id']]['letterhead'] = lh_path
     save_users(users)
-    
+
     logger.info(f'User {u["id"]} updated letterhead')
     return jsonify({'success': True})
 
@@ -1875,13 +1630,11 @@ def api_email_history():
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-    
+
     history = get_email_history()
     user_emails = [email for email in history.values() if email.get('user_id') == u['id']]
-    
-    # Sort by sent_at descending (newest first)
     user_emails.sort(key=lambda x: x.get('sent_at', ''), reverse=True)
-    
+
     return jsonify({'success': True, 'emails': user_emails})
 
 @app.route('/api/download-offer-letter/<cid>')
@@ -1889,21 +1642,20 @@ def download_offer_letter(cid):
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-    
+
     cands = get_cands()
     c = cands.get(cid)
-    
+
     if not c:
         return jsonify({'success': False, 'message': 'Candidate not found'}), 404
-    
+
     if c.get('hr_id') != u['id']:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    # Check if PDF exists
+
     pdf_path = os.path.join(LETTER_DIR, f"offer_{cid}.pdf")
     if not os.path.exists(pdf_path):
         return jsonify({'success': False, 'message': 'Offer letter not found. Please send the offer first.'}), 404
-    
+
     return send_file(pdf_path, as_attachment=True, download_name=f"Offer_Letter_{c['name'].replace(' ', '_')}.pdf")
 
 @app.route('/api/cancel-offer/<cid>', methods=['POST'])
@@ -1911,25 +1663,23 @@ def cancel_offer(cid):
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-    
+
     cands = get_cands()
     c = cands.get(cid)
-    
+
     if not c:
         return jsonify({'success': False, 'message': 'Candidate not found'}), 404
-    
+
     if c.get('hr_id') != u['id']:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    # Only allow cancelling pending offers
+
     if c.get('offer_status') != 'pending':
         return jsonify({'success': False, 'message': 'Can only cancel pending offers'}), 400
-    
-    # Cancel the offer
+
     c['offer_status'] = 'cancelled'
     c['cancelled_at'] = str(datetime.now())
     save_cands(cands)
-    
+
     logger.info(f'Offer cancelled for candidate {cid} by user {u["id"]}')
     return jsonify({'success': True, 'message': 'Offer cancelled successfully'})
 
@@ -1938,16 +1688,16 @@ def get_candidate(cid):
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-    
+
     cands = get_cands()
     c = cands.get(cid)
-    
+
     if not c:
         return jsonify({'success': False, 'message': 'Candidate not found'}), 404
-    
+
     if c.get('hr_id') != u['id']:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
+
     return jsonify({'success': True, 'candidate': c})
 
 @app.route('/api/update-candidate/<cid>', methods=['POST'])
@@ -1955,107 +1705,107 @@ def update_candidate(cid):
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-    
+
     cands = get_cands()
     c = cands.get(cid)
-    
+
     if not c:
         return jsonify({'success': False, 'message': 'Candidate not found'}), 404
-    
+
     if c.get('hr_id') != u['id']:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    # Don't allow editing after email is sent
+
     if c.get('email_sent_at'):
         return jsonify({'success': False, 'message': 'Cannot edit candidate after email is sent'}), 400
-    
+
     data = request.json or {}
-    
-    # Update allowed fields
+
     allowed_fields = ['name', 'email', 'role', 'joining_date', 'salary', 'employment_type']
     for field in allowed_fields:
         if field in data:
             c[field] = sanitize_string(data[field])
-    
-    # Validate email if changed
+
     if 'email' in data and not validate_email(c['email']):
         return jsonify({'success': False, 'message': 'Invalid email format'}), 400
-    
+
     save_cands(cands)
-    
+
     logger.info(f'Candidate {cid} updated by user {u["id"]}')
     return jsonify({'success': True, 'message': 'Candidate updated successfully'})
 
-@app.route('/api/subscription')
-def api_subscription():
-    u = current_user()
-    if not u:
-        return jsonify({'success': False}), 401
-    
-    sub = u.get('subscription', {})
-    tier = sub.get('tier', 'free')
-    tier_config = SUBSCRIPTION_TIERS.get(tier, SUBSCRIPTION_TIERS['free'])
-    
-    return jsonify({
-        'success': True,
-        'subscription': {
-            'tier': tier,
-            'status': sub.get('status', 'active'),
-            'offers_sent': sub.get('offers_sent_this_month', 0),
-            'offers_limit': tier_config['offers_per_month'],
-            'verifications_sent': sub.get('verifications_this_month', 0),
-            'verifications_limit': tier_config['verifications_per_month'],
-            'billing_cycle_start': sub.get('billing_cycle_start', ''),
-            'stripe_customer_id': sub.get('stripe_customer_id'),
-            'stripe_subscription_id': sub.get('stripe_subscription_id')
-        },
-        'tier_config': tier_config
-    })
 
-@app.route('/api/create-checkout-session', methods=['POST'])
-def create_checkout_session():
-    u = current_user()
-    if not u:
-        return jsonify({'success': False}), 401
-    
-    data = request.json
-    tier = data.get('tier')
-    
-    if tier not in SUBSCRIPTION_TIERS or tier == 'free':
-        return jsonify({'success': False, 'message': 'Invalid tier'}), 400
-    
-    tier_config = SUBSCRIPTION_TIERS[tier]
-    
-    # For now, return a mock response (Stripe integration requires actual Stripe account)
-    # In production, you would create a Stripe checkout session here
-    return jsonify({
-        'success': True,
-        'message': f'Checkout for {tier_config["name"]} tier would be created here',
-        'tier': tier,
-        'price': tier_config['price']
-    })
+def send_email(to, subject, html_body, attach_path=None, attach_name=None, user_id=None, candidate_id=None, email_type='offer'):
+    if not BREVO_API_KEY:
+        logger.error('BREVO_API_KEY is not set — check your .env file')
+        return False
 
-@app.route('/api/upgrade-tier', methods=['POST'])
-def upgrade_tier():
-    u = current_user()
-    if not u:
-        return jsonify({'success': False}), 401
-    
-    data = request.json
-    tier = data.get('tier')
-    
-    if tier not in SUBSCRIPTION_TIERS:
-        return jsonify({'success': False, 'message': 'Invalid tier'}), 400
-    
-    users = get_users()
-    users[u['id']]['subscription']['tier'] = tier
-    users[u['id']]['subscription']['status'] = 'active'
-    users[u['id']]['subscription']['offers_sent_this_month'] = 0
-    users[u['id']]['subscription']['verifications_this_month'] = 0
-    users[u['id']]['subscription']['billing_cycle_start'] = datetime.now().strftime('%Y-%m-%d')
-    save_users(users)
-    
-    return jsonify({'success': True, 'message': f'Upgraded to {tier} tier'})
+    email_id = str(uuid.uuid4())
+    success = False
+    error_msg = None
+
+    try:
+        configuration = sib_api_v3_sdk.Configuration()
+        configuration.api_key['api-key'] = BREVO_API_KEY
+
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+            sib_api_v3_sdk.ApiClient(configuration)
+        )
+
+        attachments = []
+        if attach_path and os.path.exists(attach_path):
+            with open(attach_path, 'rb') as f:
+                encoded_file = base64.b64encode(f.read()).decode()
+            attachments.append({
+                'content': encoded_file,
+                'name': attach_name or 'offer_letter.pdf'
+            })
+
+        email_params = {
+            'to': [{'email': to}],
+            'sender': {'name': SENDER_NAME, 'email': SENDER_EMAIL},
+            'subject': subject,
+            'html_content': html_body
+        }
+        if attachments:
+            email_params['attachment'] = attachments
+
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(**email_params)
+        api_instance.send_transac_email(send_smtp_email)
+        logger.info(f'Email sent to {to}')
+        success = True
+
+    except ApiException as e:
+        logger.error(f'Brevo API error: {e}')
+        error_msg = str(e)
+    except Exception as e:
+        logger.error(f'General email error: {e}')
+        error_msg = str(e)
+
+    history = get_email_history()
+    history[email_id] = {
+        'id': email_id,
+        'user_id': user_id,
+        'candidate_id': candidate_id,
+        'email_type': email_type,
+        'to': to,
+        'subject': subject,
+        'sent_at': str(datetime.now()),
+        'status': 'sent' if success else 'failed',
+        'error': error_msg,
+        'has_attachment': bool(attach_path)
+    }
+    save_email_history(history)
+
+    return success
+
+
+def send_async(to, subject, html, attach_path=None, attach_name=None, user_id=None, candidate_id=None, email_type='offer'):
+    t = threading.Thread(
+        target=send_email,
+        args=(to, subject, html, attach_path, attach_name, user_id, candidate_id, email_type),
+        daemon=True
+    )
+    t.start()
 
 
 if __name__ == '__main__':

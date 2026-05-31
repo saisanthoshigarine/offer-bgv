@@ -69,10 +69,6 @@
 .sb-btn-ghost{background:rgba(255,255,255,.07);color:rgba(255,255,255,.75);
               border:1px solid rgba(255,255,255,.1)}
 .sb-btn-ghost:hover{background:rgba(255,255,255,.13);color:#fff}
-.sb-sub-badge{margin-left:auto;font-size:.7rem;background:var(--gold);color:#fff;
-              padding:2px 8px;border-radius:99px;font-weight:700;animation:goldPulse 2s infinite;
-              box-shadow:0 0 0 3px rgba(245,158,11,0.2)}
-@keyframes goldPulse{0%,100%{box-shadow:0 0 0 3px rgba(245,158,11,0.2)}50%{box-shadow:0 0 0 6px rgba(245,158,11,0.1)}}
 
 .sb-user{padding:12px 16px;border-top:1px solid rgba(255,255,255,.07);
          display:flex;align-items:center;gap:10px;position:relative}
@@ -137,13 +133,9 @@
 .sc-num{font-family:var(--font-display);font-size:2.2rem;color:var(--navy);
         line-height:1;margin-bottom:6px;font-weight:700}
 .sc-lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.sc-trend{display:flex;align-items:center;gap:4px;font-size:.75rem;font-weight:600;margin-top:4px}
-.sc-trend.up{color:var(--green)}
-.sc-trend.down{color:var(--red)}
 .sc-icon{position:absolute;bottom:12px;right:14px;font-size:1.8rem;opacity:.06;color:var(--navy);transition:all var(--dur-normal) var(--ease-smooth)}
 .stat-card:hover .sc-icon{opacity:.12;transform:scale(1.1)}
 
-/* Stagger animation delays */
 .stat-card:nth-child(1){animation-delay:0ms}
 .stat-card:nth-child(2){animation-delay:60ms}
 .stat-card:nth-child(3){animation-delay:120ms}
@@ -151,7 +143,6 @@
 .stat-card:nth-child(5){animation-delay:240ms}
 .stat-card:nth-child(6){animation-delay:300ms}
 .stat-card:nth-child(7){animation-delay:360ms}
-.stat-card:nth-child(8){animation-delay:420ms}
 
 /* ═══ Charts row ════════════════════════════════════════════════════════ */
 .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:28px}
@@ -164,8 +155,7 @@
 .chart-card h3{font-family:var(--font-display);font-size:1.1rem;color:var(--navy);
                margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .chart-card p{font-size:.78rem;color:var(--muted);margin-bottom:16px}
-.chart-wrap{position:relative;height:220px;display:flex;align-items:center;
-            justify-content:center}
+.chart-wrap{position:relative;height:220px;display:flex;align-items:center;justify-content:center}
 .chart-legend{display:flex;flex-direction:column;gap:6px;margin-top:12px}
 .legend-item{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);
             cursor:pointer;transition:all var(--dur-fast) var(--ease-smooth);padding:4px 8px;border-radius:6px}
@@ -195,7 +185,6 @@
 .empty-row td{text-align:center;padding:56px 20px;color:var(--muted)}
 .empty-row i{font-size:2.5rem;display:block;margin-bottom:12px;opacity:.15}
 
-/* badges */
 .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:16px;
        font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .bg-acc{background:#d1fae5;color:#065f46}
@@ -276,10 +265,6 @@
       <button class="sb-btn sb-btn-ghost" onclick="location.href='/api/download-template'">
         <i class="fas fa-download"></i> Export Offers
       </button>
-      <button class="sb-btn sb-btn-ghost" onclick="location.href='/pricing'">
-        <i class="fas fa-crown"></i> Subscription
-        <span class="sb-sub-badge">FREE</span>
-      </button>
       <button class="sb-btn sb-btn-ghost" onclick="location.href='/settings'">
         <i class="fas fa-cog"></i> Settings
       </button>
@@ -326,9 +311,7 @@
           <h2><i class="fas fa-file-alt" style="color:#1a56db;font-size:1rem"></i> Offer Overview</h2>
           <span class="section-tag tag-blue"><i class="fas fa-briefcase"></i> Offer Letters</span>
         </div>
-        <div class="stat-grid" id="offerStatGrid">
-          <!-- filled by JS -->
-        </div>
+        <div class="stat-grid" id="offerStatGrid"></div>
       </div>
 
       <!-- ── Verification Overview Section ── -->
@@ -337,20 +320,7 @@
           <h2><i class="fas fa-shield-alt" style="color:#10b981;font-size:1rem"></i> Verification Overview</h2>
           <span class="section-tag tag-green"><i class="fas fa-user-check"></i> Background Checks</span>
         </div>
-        <div class="stat-grid-3" id="verStatGrid">
-          <!-- filled by JS -->
-        </div>
-      </div>
-
-      <!-- ── Subscription Overview Section ── -->
-      <div class="overview-section">
-        <div class="overview-section-title">
-          <h2><i class="fas fa-crown" style="color:#f97316;font-size:1rem"></i> Subscription</h2>
-          <span class="section-tag tag-blue"><i class="fas fa-credit-card"></i> Plan & Usage</span>
-        </div>
-        <div class="stat-grid-3" id="subStatGrid">
-          <!-- filled by JS -->
-        </div>
+        <div class="stat-grid-3" id="verStatGrid"></div>
       </div>
 
       <!-- ── Pie Charts ── -->
@@ -374,7 +344,7 @@
       </div>
     </div>
 
-    <!-- ════ LIST PAGE (reused for all table views) ═══════════════════ -->
+    <!-- ════ LIST PAGE ═══════════════════════════════════════════════ -->
     <div class="page" id="page-list">
       <div class="page-header">
         <h2 id="listTitle">All Offers</h2>
@@ -389,7 +359,6 @@
     </div>
   </div><!-- /main -->
 </div>
-
 {% endblock %}
 
 {% block scripts %}
@@ -397,17 +366,16 @@
 let dashStats = {};
 let offerChart = null, verChart = null;
 
-/* ── nav ── */
 const PAGE_CFG = {
-  dash:      {title:'Dashboard',         sub:'Overview of your hiring pipeline', type:'dash'},
-  all:       {title:'All Offers',        sub:'Complete offer list',               type:'offers', status:null},
-  accepted:  {title:'Accepted Offers',   sub:'Candidates who accepted',           type:'offers', status:'accepted'},
-  declined:  {title:'Declined Offers',   sub:'Candidates who declined',           type:'offers', status:'declined'},
-  pending:   {title:'Action Pending',    sub:'Awaiting candidate response',       type:'offers', status:'pending'},
-  cancelled: {title:'Cancelled Offers',  sub:'Expired — no response after 48h',  type:'offers', status:'cancelled'},
-  verified:  {title:'Verified',          sub:'Background-verified candidates',    type:'verifications', status:'verified'},
-  rejected:  {title:'Rejected',          sub:'Verification rejected',             type:'verifications', status:'rejected'},
-  verpending:{title:'Verification Pending',sub:'Awaiting background check result',type:'verifications', status:'pending'},
+  dash:      {title:'Dashboard',             sub:'Overview of your hiring pipeline',  type:'dash'},
+  all:       {title:'All Offers',            sub:'Complete offer list',               type:'offers',        status:null},
+  accepted:  {title:'Accepted Offers',       sub:'Candidates who accepted',           type:'offers',        status:'accepted'},
+  declined:  {title:'Declined Offers',       sub:'Candidates who declined',           type:'offers',        status:'declined'},
+  pending:   {title:'Action Pending',        sub:'Awaiting candidate response',       type:'offers',        status:'pending'},
+  cancelled: {title:'Cancelled Offers',      sub:'Expired — no response after 48h',  type:'offers',        status:'cancelled'},
+  verified:  {title:'Verified',              sub:'Background-verified candidates',    type:'verifications', status:'verified'},
+  rejected:  {title:'Rejected',              sub:'Verification rejected',             type:'verifications', status:'rejected'},
+  verpending:{title:'Verification Pending',  sub:'Awaiting background check result', type:'verifications', status:'pending'},
 };
 
 function nav(key, el){
@@ -427,12 +395,10 @@ function nav(key, el){
   loadList(cfg.type, cfg.status, cfg.title);
 }
 
-/* ── load stats ── */
 async function loadStats(){
   const d = await apiFetch('/api/dashboard-stats');
   dashStats = d;
 
-  // sidebar counts
   document.getElementById('sbAvatar').textContent  = (d.company_name||'H')[0].toUpperCase();
   document.getElementById('sbName').textContent    = d.company_name || 'HR';
   document.getElementById('sbCompany').textContent = d.company_name || '';
@@ -449,70 +415,37 @@ async function loadStats(){
   renderOfferSection(d);
   renderVerSection(d);
   renderCharts(d);
-  loadSubscription();
 }
 
-/* ── Offer Overview stat cards ── */
 function renderOfferSection(d){
   document.getElementById('offerStatGrid').innerHTML = [
-    {cls:'c-blue',  icon:'fa-file-alt',     num:d.total_offers,   lbl:'Total Offers',   page:'all'},
-    {cls:'c-green', icon:'fa-check-circle',  num:d.offer_accepted, lbl:'Offer Accepted', page:'accepted'},
-    {cls:'c-red',   icon:'fa-times-circle',  num:d.offer_declined, lbl:'Offer Declined', page:'declined'},
-    {cls:'c-amber', icon:'fa-clock',         num:d.action_pending, lbl:'Action Pending', page:'pending'},
+    {cls:'c-blue',  icon:'fa-file-alt',    num:d.total_offers,   lbl:'Total Offers',   page:'all'},
+    {cls:'c-green', icon:'fa-check-circle', num:d.offer_accepted, lbl:'Offer Accepted', page:'accepted'},
+    {cls:'c-red',   icon:'fa-times-circle', num:d.offer_declined, lbl:'Offer Declined', page:'declined'},
+    {cls:'c-amber', icon:'fa-clock',        num:d.action_pending, lbl:'Action Pending', page:'pending'},
   ].map(s=>`
     <div class="stat-card ${s.cls}" onclick="nav('${s.page}')">
-      <div class="sc-num" data-counter="${s.num}">${s.num}</div>
+      <div class="sc-num">${s.num}</div>
       <div class="sc-lbl">${s.lbl}</div>
       <i class="fas ${s.icon} sc-icon"></i>
     </div>`).join('');
 }
 
-/* ── Verification Overview stat cards ── */
 function renderVerSection(d){
   document.getElementById('verStatGrid').innerHTML = [
-    {cls:'c-green',  icon:'fa-shield-alt',    num:d.verified,             lbl:'Verified',              page:'verified'},
-    {cls:'c-red',    icon:'fa-user-times',     num:d.rejected,             lbl:'Rejected',              page:'rejected'},
-    {cls:'c-navy',   icon:'fa-hourglass-half', num:d.verification_pending, lbl:'Verification Pending',  page:'verpending'},
+    {cls:'c-green', icon:'fa-shield-alt',    num:d.verified,             lbl:'Verified',             page:'verified'},
+    {cls:'c-red',   icon:'fa-user-times',     num:d.rejected,             lbl:'Rejected',             page:'rejected'},
+    {cls:'c-navy',  icon:'fa-hourglass-half', num:d.verification_pending, lbl:'Verification Pending', page:'verpending'},
   ].map(s=>`
     <div class="stat-card ${s.cls}" onclick="nav('${s.page}')">
-      <div class="sc-num" data-counter="${s.num}">${s.num}</div>
+      <div class="sc-num">${s.num}</div>
       <div class="sc-lbl">${s.lbl}</div>
       <i class="fas ${s.icon} sc-icon"></i>
     </div>`).join('');
 }
 
-/* ── Subscription Overview stat cards ── */
-async function loadSubscription(){
-  try {
-    const d = await apiFetch('/api/subscription');
-    if (d.success) {
-      renderSubSection(d.subscription, d.tier_config);
-    }
-  } catch (e) {
-    console.error('Failed to load subscription:', e);
-  }
-}
-
-function renderSubSection(sub, tierConfig){
-  const offersLimit = tierConfig.offers_per_month === -1 ? '∞' : tierConfig.offers_per_month;
-  const verLimit = tierConfig.verifications_per_month === -1 ? '∞' : tierConfig.verifications_per_month;
-  
-  document.getElementById('subStatGrid').innerHTML = [
-    {cls:'c-amber', icon:'fa-crown', num:sub.tier.charAt(0).toUpperCase() + sub.tier.slice(1), lbl:'Current Plan', page:'pricing'},
-    {cls:'c-blue',  icon:'fa-envelope', num:sub.offers_sent, lbl:'Offers This Month', page:'pricing'},
-    {cls:'c-green', icon:'fa-user-check', num:sub.verifications_sent, lbl:'Verifications This Month', page:'pricing'},
-  ].map(s=>`
-    <div class="stat-card ${s.cls}" onclick="location.href='/pricing'">
-      <div class="sc-num" data-counter="${s.num}">${s.num}</div>
-      <div class="sc-lbl">${s.lbl}</div>
-      <i class="fas ${s.icon} sc-icon"></i>
-    </div>`).join('');
-}
-
-/* ── Charts ── */
 function renderCharts(d){
-  // Offer pie
-  const offerData = [d.offer_accepted, d.offer_declined, d.action_pending, d.cancelled];
+  const offerData   = [d.offer_accepted, d.offer_declined, d.action_pending, d.cancelled];
   const offerLabels = ['Accepted','Declined','Pending','Cancelled'];
   const offerColors = ['#10b981','#ef4444','#f97316','#94a3b8'];
 
@@ -520,14 +453,12 @@ function renderCharts(d){
   const ctx1 = document.getElementById('offerChart').getContext('2d');
   const total1 = offerData.reduce((a,b)=>a+b,0);
   if(total1 === 0){
-    ctx1.font = '13px DM Sans';
-    ctx1.fillStyle = '#94a3b8';
-    ctx1.textAlign = 'center';
-    ctx1.fillText('No data yet', 100, 110);
+    ctx1.font = '13px DM Sans'; ctx1.fillStyle = '#94a3b8';
+    ctx1.textAlign = 'center'; ctx1.fillText('No data yet', 100, 110);
   } else {
-    offerChart = new Chart(ctx1, {
+    offerChart = new Chart(ctx1,{
       type:'doughnut',
-      data:{labels:offerLabels, datasets:[{data:offerData,backgroundColor:offerColors,
+      data:{labels:offerLabels,datasets:[{data:offerData,backgroundColor:offerColors,
             borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
       options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
                animation:{animateRotate:true,animateScale:true,duration:800,easing:'easeOutQuart'},
@@ -540,7 +471,6 @@ function renderCharts(d){
     `<div class="legend-item"><div class="legend-dot" style="background:${offerColors[i]}"></div>
      ${l}: <b style="margin-left:auto">${offerData[i]}</b></div>`).join('');
 
-  // Verification pie
   const verData   = [d.verified, d.rejected, d.verification_pending];
   const verLabels = ['Verified','Rejected','Pending'];
   const verColors = ['#10b981','#ef4444','#f97316'];
@@ -549,14 +479,12 @@ function renderCharts(d){
   const ctx2 = document.getElementById('verChart').getContext('2d');
   const total2 = verData.reduce((a,b)=>a+b,0);
   if(total2 === 0){
-    ctx2.font = '13px DM Sans';
-    ctx2.fillStyle = '#94a3b8';
-    ctx2.textAlign = 'center';
-    ctx2.fillText('No data yet', 100, 110);
+    ctx2.font = '13px DM Sans'; ctx2.fillStyle = '#94a3b8';
+    ctx2.textAlign = 'center'; ctx2.fillText('No data yet', 100, 110);
   } else {
-    verChart = new Chart(ctx2, {
+    verChart = new Chart(ctx2,{
       type:'doughnut',
-      data:{labels:verLabels, datasets:[{data:verData,backgroundColor:verColors,
+      data:{labels:verLabels,datasets:[{data:verData,backgroundColor:verColors,
             borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
       options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
                animation:{animateRotate:true,animateScale:true,duration:800,easing:'easeOutQuart'},
@@ -570,14 +498,13 @@ function renderCharts(d){
      ${l}: <b style="margin-left:auto">${verData[i]}</b></div>`).join('');
 }
 
-/* ── Load list table ── */
 const STATUS_BADGE = {
-  accepted:'<span class="badge bg-acc"><i class="fas fa-check-circle"></i> Accepted</span>',
-  declined:'<span class="badge bg-dec"><i class="fas fa-times-circle"></i> Declined</span>',
-  pending: '<span class="badge bg-pend"><i class="fas fa-clock"></i> Pending</span>',
+  accepted: '<span class="badge bg-acc"><i class="fas fa-check-circle"></i> Accepted</span>',
+  declined: '<span class="badge bg-dec"><i class="fas fa-times-circle"></i> Declined</span>',
+  pending:  '<span class="badge bg-pend"><i class="fas fa-clock"></i> Pending</span>',
   cancelled:'<span class="badge bg-canc"><i class="fas fa-ban"></i> Cancelled</span>',
-  verified:'<span class="badge bg-ver"><i class="fas fa-shield-alt"></i> Verified</span>',
-  rejected:'<span class="badge bg-rej"><i class="fas fa-times-circle"></i> Rejected</span>',
+  verified: '<span class="badge bg-ver"><i class="fas fa-shield-alt"></i> Verified</span>',
+  rejected: '<span class="badge bg-rej"><i class="fas fa-times-circle"></i> Rejected</span>',
 };
 
 async function loadList(type, status, title){
@@ -607,19 +534,17 @@ async function loadList(type, status, title){
       <td><span class="badge bg-blue">${r.employment_type.replace(/_/g,' ')}</span></td>
       <td>${STATUS_BADGE[r.offer_status]||r.offer_status}</td>
       <td>
-        <button onclick="downloadOfferLetter('${r.id}')" style="background:#1a56db;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;" title="Download PDF">
-          <i class="fas fa-download"></i>
-        </button>
+        <button onclick="downloadOfferLetter('${r.id}')"
+          style="background:#1a56db;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px"
+          title="Download PDF"><i class="fas fa-download"></i></button>
         ${!r.email_sent_at ? `
-        <button onclick="editCandidate('${r.id}')" style="background:#f59e0b;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;" title="Edit Candidate">
-          <i class="fas fa-edit"></i>
-        </button>
-        ` : ''}
+        <button onclick="editCandidate('${r.id}')"
+          style="background:#f59e0b;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px"
+          title="Edit"><i class="fas fa-edit"></i></button>` : ''}
         ${r.offer_status === 'pending' ? `
-        <button onclick="cancelOffer('${r.id}', '${r.name}')" style="background:#ef4444;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;" title="Cancel Offer">
-          <i class="fas fa-times"></i>
-        </button>
-        ` : ''}
+        <button onclick="cancelOffer('${r.id}','${r.name}')"
+          style="background:#ef4444;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px"
+          title="Cancel"><i class="fas fa-times"></i></button>` : ''}
       </td>
     </tr>`).join('')
     : `<tr class="empty-row"><td colspan="9"><i class="fas fa-inbox"></i>No records found</td></tr>`;
@@ -639,255 +564,171 @@ async function loadList(type, status, title){
   }
 }
 
-// ── Download Offer Letter ──
-function downloadOfferLetter(cid) {
+function downloadOfferLetter(cid){
   window.open(`/api/download-offer-letter/${cid}`, '_blank');
 }
 
-// ── Cancel Offer ──
-async function cancelOffer(cid, name) {
-  if (!confirm(`Are you sure you want to cancel the offer for ${name}?`)) return;
-  
+async function cancelOffer(cid, name){
+  if(!confirm(`Are you sure you want to cancel the offer for ${name}?`)) return;
   showLoading();
   try {
-    const res = await fetch(`/api/cancel-offer/${cid}`, { method: 'POST' });
+    const res  = await fetch(`/api/cancel-offer/${cid}`, {method:'POST'});
     const data = await res.json();
     hideLoading();
-    
-    if (data.success) {
-      showToast('Offer cancelled successfully');
-      loadList('offers', null, 'All Offers');
-      loadStats();
-    } else {
-      showToast(data.message || 'Failed to cancel offer', 'error');
-    }
-  } catch (e) {
-    hideLoading();
-    showToast('Failed to cancel offer', 'error');
-  }
+    if(data.success){ showToast('Offer cancelled successfully'); loadList('offers', null, 'All Offers'); loadStats(); }
+    else showToast(data.message || 'Failed to cancel offer', 'error');
+  } catch(e){ hideLoading(); showToast('Failed to cancel offer', 'error'); }
 }
 
-// ── Edit Candidate ──
-async function editCandidate(cid) {
+async function editCandidate(cid){
   const res = await apiFetch(`/api/get-candidate/${cid}`);
-  if (!res.success) return;
-  
+  if(!res.success) return;
   const c = res.candidate;
-  
+
   const modal = document.createElement('div');
-  modal.style.cssText = `
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000;
-    display: flex; align-items: center; justify-content: center;
-  `;
-  
+  modal.className = 'edit-candidate-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center';
+
   const content = document.createElement('div');
-  content.style.cssText = `
-    background: #fff; border-radius: 16px; width: 90%; max-width: 500px;
-    max-height: 80vh; overflow-y: auto; padding: 24px;
-  `;
-  
+  content.style.cssText = 'background:#fff;border-radius:16px;width:90%;max-width:500px;max-height:80vh;overflow-y:auto;padding:24px';
   content.innerHTML = `
-    <h2 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 700; color: #0d1b3e;">
+    <h2 style="margin:0 0 20px;font-size:20px;font-weight:700;color:#0d1b3e">
       <i class="fas fa-edit"></i> Edit Candidate
     </h2>
     <form id="editCandidateForm">
-      <div style="margin-bottom: 16px;">
-        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #64748b; margin-bottom: 6px;">Name</label>
-        <input type="text" id="editName" value="${c.name}" style="width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
-      </div>
-      <div style="margin-bottom: 16px;">
-        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #64748b; margin-bottom: 6px;">Email</label>
-        <input type="email" id="editEmail" value="${c.email}" style="width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
-      </div>
-      <div style="margin-bottom: 16px;">
-        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #64748b; margin-bottom: 6px;">Role</label>
-        <input type="text" id="editRole" value="${c.role}" style="width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
-      </div>
-      <div style="margin-bottom: 16px;">
-        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #64748b; margin-bottom: 6px;">Joining Date</label>
-        <input type="date" id="editJoiningDate" value="${c.joining_date || ''}" style="width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
-      </div>
-      <div style="margin-bottom: 16px;">
-        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #64748b; margin-bottom: 6px;">Salary</label>
-        <input type="text" id="editSalary" value="${c.salary}" style="width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
-      </div>
-      <div style="margin-bottom: 24px;">
-        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #64748b; margin-bottom: 6px;">Employment Type</label>
-        <select id="editEmploymentType" style="width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
-          <option value="full_time" ${c.employment_type === 'full_time' ? 'selected' : ''}>Full Time</option>
-          <option value="part_time" ${c.employment_type === 'part_time' ? 'selected' : ''}>Part Time</option>
-          <option value="contract" ${c.employment_type === 'contract' ? 'selected' : ''}>Contract</option>
-          <option value="internship" ${c.employment_type === 'internship' ? 'selected' : ''}>Internship</option>
+      ${[['Name','text','editName',c.name],['Email','email','editEmail',c.email],
+         ['Role','text','editRole',c.role],['Joining Date','date','editJoiningDate',c.joining_date||''],
+         ['Salary','text','editSalary',c.salary]].map(([lbl,type,id,val])=>`
+        <div style="margin-bottom:16px">
+          <label style="display:block;font-weight:600;font-size:.85rem;color:#64748b;margin-bottom:6px">${lbl}</label>
+          <input type="${type}" id="${id}" value="${val}"
+            style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.95rem;box-sizing:border-box">
+        </div>`).join('')}
+      <div style="margin-bottom:24px">
+        <label style="display:block;font-weight:600;font-size:.85rem;color:#64748b;margin-bottom:6px">Employment Type</label>
+        <select id="editEmploymentType"
+          style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.95rem">
+          ${['full_time','part_time','contract','internship'].map(v=>
+            `<option value="${v}" ${c.employment_type===v?'selected':''}>${v.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}</option>`
+          ).join('')}
         </select>
       </div>
-      <div style="display: flex; gap: 12px;">
-        <button type="button" onclick="this.closest('.edit-candidate-modal').remove()" 
-                style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; background: #fff; cursor: pointer; font-weight: 600;">
+      <div style="display:flex;gap:12px">
+        <button type="button" onclick="this.closest('.edit-candidate-modal').remove()"
+          style="flex:1;padding:12px;border:2px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-weight:600">
           Cancel
         </button>
-        <button type="submit" style="flex: 1; padding: 12px; border: none; border-radius: 8px; background: #1a56db; color: #fff; cursor: pointer; font-weight: 600;">
+        <button type="submit"
+          style="flex:1;padding:12px;border:none;border-radius:8px;background:#1a56db;color:#fff;cursor:pointer;font-weight:600">
           Save Changes
         </button>
       </div>
-    </form>
-  `;
-  
+    </form>`;
+
   modal.appendChild(content);
-  modal.className = 'edit-candidate-modal';
   document.body.appendChild(modal);
-  
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.remove();
-  });
-  
-  document.getElementById('editCandidateForm').addEventListener('submit', async (e) => {
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+
+  document.getElementById('editCandidateForm').addEventListener('submit', async e => {
     e.preventDefault();
-    
     const data = {
-      name: document.getElementById('editName').value,
-      email: document.getElementById('editEmail').value,
-      role: document.getElementById('editRole').value,
-      joining_date: document.getElementById('editJoiningDate').value,
-      salary: document.getElementById('editSalary').value,
-      employment_type: document.getElementById('editEmploymentType').value
+      name:            document.getElementById('editName').value,
+      email:           document.getElementById('editEmail').value,
+      role:            document.getElementById('editRole').value,
+      joining_date:    document.getElementById('editJoiningDate').value,
+      salary:          document.getElementById('editSalary').value,
+      employment_type: document.getElementById('editEmploymentType').value,
     };
-    
     showLoading();
     try {
-      const res = await fetch(`/api/update-candidate/${cid}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      const result = await res.json();
+      const r = await fetch(`/api/update-candidate/${cid}`,{method:'POST',
+        headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+      const result = await r.json();
       hideLoading();
-      
-      if (result.success) {
-        showToast('Candidate updated successfully');
-        modal.remove();
-        loadList('offers', null, 'All Offers');
-      } else {
-        showToast(result.message || 'Failed to update candidate', 'error');
-      }
-    } catch (e) {
-      hideLoading();
-      showToast('Failed to update candidate', 'error');
-    }
+      if(result.success){ showToast('Candidate updated successfully'); modal.remove(); loadList('offers',null,'All Offers'); }
+      else showToast(result.message || 'Failed to update candidate', 'error');
+    } catch(e){ hideLoading(); showToast('Failed to update candidate','error'); }
   });
 }
 
-// ── Email History Modal ──
-async function showEmailHistory() {
+async function showEmailHistory(){
   const res = await apiFetch('/api/email-history');
-  if (!res.success) return;
-  
+  if(!res.success) return;
+
   const modal = document.createElement('div');
-  modal.style.cssText = `
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000;
-    display: flex; align-items: center; justify-content: center;
-  `;
-  
+  modal.className = 'email-history-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center';
+
   const content = document.createElement('div');
-  content.style.cssText = `
-    background: #fff; border-radius: 16px; width: 90%; max-width: 800px;
-    max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;
-  `;
-  
+  content.style.cssText = 'background:#fff;border-radius:16px;width:90%;max-width:800px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column';
+
   const header = document.createElement('div');
-  header.style.cssText = `
-    padding: 20px 24px; border-bottom: 1px solid #e2e8f0;
-    display: flex; justify-content: space-between; align-items: center;
-  `;
+  header.style.cssText = 'padding:20px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center';
   header.innerHTML = `
-    <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #0d1b3e;">
+    <h2 style="margin:0;font-size:20px;font-weight:700;color:#0d1b3e">
       <i class="fas fa-envelope"></i> Email History
     </h2>
-    <button onclick="this.closest('.email-history-modal').remove()" 
-            style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">
-      ×
-    </button>
-  `;
-  
+    <button onclick="this.closest('.email-history-modal').remove()"
+      style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b">×</button>`;
+
   const body = document.createElement('div');
-  body.style.cssText = 'padding: 0; overflow-y: auto; flex: 1;';
-  
-  if (res.emails.length === 0) {
-    body.innerHTML = `
-      <div style="padding: 60px 20px; text-align: center; color: #64748b;">
-        <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i>
-        <p>No emails sent yet</p>
-      </div>
-    `;
+  body.style.cssText = 'padding:0;overflow-y:auto;flex:1';
+
+  if(res.emails.length === 0){
+    body.innerHTML = `<div style="padding:60px 20px;text-align:center;color:#64748b">
+      <i class="fas fa-inbox" style="font-size:48px;margin-bottom:16px"></i><p>No emails sent yet</p></div>`;
   } else {
     const table = document.createElement('table');
-    table.style.cssText = 'width: 100%; border-collapse: collapse;';
+    table.style.cssText = 'width:100%;border-collapse:collapse';
     table.innerHTML = `
-      <thead style="background: #f0f4fa; position: sticky; top: 0;">
-        <tr>
-          <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Type</th>
-          <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">To</th>
-          <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Subject</th>
-          <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Sent</th>
-          <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Status</th>
-        </tr>
+      <thead style="background:#f0f4fa;position:sticky;top:0">
+        <tr>${['Type','To','Subject','Sent','Status'].map(h=>
+          `<th style="padding:12px 16px;text-align:left;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase">${h}</th>`
+        ).join('')}</tr>
       </thead>
-      <tbody>
-        ${res.emails.map(email => `
-          <tr style="border-bottom: 1px solid #e2e8f0;">
-            <td style="padding: 12px 16px; font-size: 13px;">
-              <span style="background: ${email.status === 'sent' ? '#d1fae5' : '#fee2e2'}; 
-                     color: ${email.status === 'sent' ? '#065f46' : '#991b1b'}; 
-                     padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase;">
-                ${email.email_type.replace(/_/g, ' ')}
-              </span>
-            </td>
-            <td style="padding: 12px 16px; font-size: 13px; color: #1e293b;">${email.to}</td>
-            <td style="padding: 12px 16px; font-size: 13px; color: #1e293b; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.subject}</td>
-            <td style="padding: 12px 16px; font-size: 13px; color: #64748b;">${new Date(email.sent_at).toLocaleString()}</td>
-            <td style="padding: 12px 16px; font-size: 13px;">
-              <span style="color: ${email.status === 'sent' ? '#10b981' : '#ef4444'}; font-weight: 600;">
-                ${email.status === 'sent' ? '✓ Sent' : '✗ Failed'}
-              </span>
-              ${email.error ? `<div style="font-size: 11px; color: #ef4444; margin-top: 4px;">${email.error}</div>` : ''}
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    `;
+      <tbody>${res.emails.map(e=>`
+        <tr style="border-bottom:1px solid #e2e8f0">
+          <td style="padding:12px 16px;font-size:13px">
+            <span style="background:${e.status==='sent'?'#d1fae5':'#fee2e2'};color:${e.status==='sent'?'#065f46':'#991b1b'};
+              padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;text-transform:uppercase">
+              ${e.email_type.replace(/_/g,' ')}
+            </span>
+          </td>
+          <td style="padding:12px 16px;font-size:13px">${e.to}</td>
+          <td style="padding:12px 16px;font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.subject}</td>
+          <td style="padding:12px 16px;font-size:13px;color:#64748b">${new Date(e.sent_at).toLocaleString()}</td>
+          <td style="padding:12px 16px;font-size:13px">
+            <span style="color:${e.status==='sent'?'#10b981':'#ef4444'};font-weight:600">
+              ${e.status==='sent'?'✓ Sent':'✗ Failed'}
+            </span>
+            ${e.error?`<div style="font-size:11px;color:#ef4444;margin-top:4px">${e.error}</div>`:''}
+          </td>
+        </tr>`).join('')}
+      </tbody>`;
     body.appendChild(table);
   }
-  
+
   content.appendChild(header);
   content.appendChild(body);
   modal.appendChild(content);
-  modal.className = 'email-history-modal';
   document.body.appendChild(modal);
-  
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.remove();
-  });
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
 }
 
-// ── Sidebar Toggle ──
-function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const main = document.querySelector('.main');
+function toggleSidebar(){
+  const sidebar   = document.getElementById('sidebar');
+  const main      = document.querySelector('.main');
   const toggleBtn = document.querySelector('.sb-toggle i');
-  
   sidebar.classList.toggle('collapsed');
-  
-  if (sidebar.classList.contains('collapsed')) {
+  if(sidebar.classList.contains('collapsed')){
     main.style.marginLeft = '64px';
-    toggleBtn.classList.remove('fa-chevron-left');
-    toggleBtn.classList.add('fa-chevron-right');
+    toggleBtn.classList.replace('fa-chevron-left','fa-chevron-right');
   } else {
     main.style.marginLeft = '260px';
-    toggleBtn.classList.remove('fa-chevron-right');
-    toggleBtn.classList.add('fa-chevron-left');
+    toggleBtn.classList.replace('fa-chevron-right','fa-chevron-left');
   }
 }
 
-// Auto-refresh stats every 30 seconds
 loadStats();
 setInterval(loadStats, 30000);
 </script>
