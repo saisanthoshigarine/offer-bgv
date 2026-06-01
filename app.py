@@ -24,6 +24,9 @@ from reportlab.pdfgen import canvas as rlc
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 
+# MongoDB
+from pymongo import MongoClient
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
@@ -32,25 +35,74 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
 
-# ── Validation Helpers ─────────────────────────────────────────────────────────
+
+# ── MongoDB setup ─────────────────────────────────────────────────────────────
+MONGO_URI    = os.environ.get('MONGODB_URI')
+_mongo_client = None
+
+def get_db():
+    global _mongo_client
+    if _mongo_client is None:
+        _mongo_client = MongoClient(MONGO_URI)
+    return _mongo_client['offerflow']
+
+
+# ── MongoDB CRUD helpers (drop-in replacements for JSON helpers) ───────────────
+def get_users():
+    return {u['id']: u for u in get_db().users.find({}, {'_id': 0})}
+
+def get_cands():
+    return {c['id']: c for c in get_db().candidates.find({}, {'_id': 0})}
+
+def get_verifs():
+    return {v['id']: v for v in get_db().verifications.find({}, {'_id': 0})}
+
+def get_tokens():
+    return {t['token']: t for t in get_db().tokens.find({}, {'_id': 0})}
+
+def get_email_history():
+    return {e['id']: e for e in get_db().email_history.find({}, {'_id': 0})}
+
+def save_users(d):
+    db = get_db()
+    for uid, u in d.items():
+        db.users.replace_one({'id': uid}, u, upsert=True)
+
+def save_cands(d):
+    db = get_db()
+    for cid, c in d.items():
+        db.candidates.replace_one({'id': cid}, c, upsert=True)
+
+def save_verifs(d):
+    db = get_db()
+    for vid, v in d.items():
+        db.verifications.replace_one({'id': vid}, v, upsert=True)
+
+def save_tokens(d):
+    db = get_db()
+    for token, t in d.items():
+        db.tokens.replace_one({'token': token}, {**t, 'token': token}, upsert=True)
+
+def save_email_history(d):
+    db = get_db()
+    for eid, e in d.items():
+        db.email_history.replace_one({'id': eid}, e, upsert=True)
+
+
+# ── Validation Helpers ────────────────────────────────────────────────────────
 def validate_email(email):
-    """Validate email format"""
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
 def validate_required_fields(data, required_fields):
-    """Check if all required fields are present and non-empty"""
     missing = [field for field in required_fields if not data.get(field, '').strip()]
     return missing
 
 def validate_file_size(file, max_size_mb=5):
-    """Validate file size limit"""
     if file:
         file.seek(0, os.SEEK_END)
         size = file.tell()
@@ -59,10 +111,10 @@ def validate_file_size(file, max_size_mb=5):
     return False
 
 def sanitize_string(s):
-    """Sanitize string input"""
     if not s:
         return ''
     return re.sub(r'[<>"\']', '', str(s).strip())
+
 
 BASE_URL      = os.environ.get('BASE_URL', 'http://localhost:5000')
 BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
@@ -73,67 +125,34 @@ BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 
 # ── Use /tmp on Vercel (read-only FS), local dirs otherwise ──────────────────
 IS_VERCEL  = bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'))
-UPLOAD_DIR = "/tmp/uploads"      if IS_VERCEL else os.path.join(BASE_DIR, 'uploads')
-DATA_DIR   = "/tmp/data"         if IS_VERCEL else os.path.join(BASE_DIR, 'data')
+UPLOAD_DIR = "/tmp/uploads"           if IS_VERCEL else os.path.join(BASE_DIR, 'uploads')
 LETTER_DIR = "/tmp/generated_letters" if IS_VERCEL else os.path.join(BASE_DIR, 'generated_letters')
 
 for d in [UPLOAD_DIR+'/letterheads', UPLOAD_DIR+'/excel',
-          UPLOAD_DIR+'/documents', DATA_DIR, LETTER_DIR]:
+          UPLOAD_DIR+'/documents', LETTER_DIR]:
     os.makedirs(d, exist_ok=True)
 
 
 # ── Letterhead path resolver ──────────────────────────────────────────────────
 def _resolve_lh_path(stored: str) -> str:
-    """
-    Accepts any of:
-      - already-correct absolute path
-      - Windows absolute path  (C:\\Users\\...)
-      - relative path with backslashes  (uploads\\letterheads\\file.pdf)
-      - relative path with forward slashes
-    Returns the real path on the current machine, or '' if not found.
-    """
     if not stored:
         return ''
-
-    # Normalise backslashes → forward slashes
     normalised = stored.replace('\\', '/').strip()
-
-    # 1. As-is (already absolute and correct)
     if os.path.isabs(normalised) and os.path.exists(normalised):
         return normalised
-
-    # 2. Just the filename → look in UPLOAD_DIR/letterheads
-    fname = os.path.basename(normalised)
+    fname  = os.path.basename(normalised)
     in_tmp = os.path.join(UPLOAD_DIR, 'letterheads', fname)
     if os.path.exists(in_tmp):
         return in_tmp
-
-    # 3. Relative to BASE_DIR
     base_rel = os.path.join(BASE_DIR, *normalised.split('/'))
     if os.path.exists(base_rel):
         return base_rel
-
     return ''
 
 
-# ── Seed /tmp from bundled project files (Vercel: filesystem is read-only) ───
+# ── Seed letterheads into /tmp on Vercel ─────────────────────────────────────
 def init_data():
-    """
-    Copy seed JSON files and uploaded letterheads from the project directory
-    into /tmp so Vercel serverless functions can read/write them.
-    Also fixes letterhead paths that were stored as absolute Windows paths.
-    """
-    # 1. Copy JSON data files
-    project_data = os.path.join(BASE_DIR, 'data')
-    if os.path.isdir(project_data):
-        for fname in ['users.json', 'candidates.json',
-                      'verifications.json', 'tokens.json']:
-            tmp_path = os.path.join(DATA_DIR, fname)
-            src_path = os.path.join(project_data, fname)
-            if not os.path.exists(tmp_path) and os.path.exists(src_path):
-                shutil.copy2(src_path, tmp_path)
-
-    # 2. Copy letterheads
+    """Copy letterhead files from project dir into /tmp (Vercel only)."""
     project_lh = os.path.join(BASE_DIR, 'uploads', 'letterheads')
     tmp_lh     = os.path.join(UPLOAD_DIR, 'letterheads')
     if os.path.isdir(project_lh):
@@ -143,48 +162,8 @@ def init_data():
             if not os.path.exists(dst):
                 shutil.copy2(src, dst)
 
-    # 3. Fix any bad letterhead paths stored in users.json
-    users_path = os.path.join(DATA_DIR, 'users.json')
-    if os.path.exists(users_path):
-        with open(users_path) as fh:
-            users = json.load(fh)
-        changed = False
-        for uid, u in users.items():
-            raw = u.get('letterhead', '')
-            if raw:
-                fixed = _resolve_lh_path(raw)
-                if fixed and fixed != raw:
-                    users[uid]['letterhead'] = fixed
-                    changed = True
-        if changed:
-            with open(users_path, 'w') as fh:
-                json.dump(users, fh, indent=2)
-
 init_data()
 
-
-# ── JSON helpers ──────────────────────────────────────────────────────────────
-def load_json(path):
-    return json.load(open(path)) if os.path.exists(path) else {}
-
-def save_json(path, data):
-    json.dump(data, open(path, 'w'), indent=2, default=str)
-
-USERS_F  = DATA_DIR+'/users.json'
-CANDS_F  = DATA_DIR+'/candidates.json'
-VERIFS_F = DATA_DIR+'/verifications.json'
-TOKENS_F = DATA_DIR+'/tokens.json'
-
-def get_users():  return load_json(USERS_F)
-def get_cands():  return load_json(CANDS_F)
-def get_verifs(): return load_json(VERIFS_F)
-def get_tokens(): return load_json(TOKENS_F)
-def get_email_history(): return load_json(DATA_DIR+'/email_history.json')
-def save_users(d):  save_json(USERS_F,  d)
-def save_cands(d):  save_json(CANDS_F,  d)
-def save_verifs(d): save_json(VERIFS_F, d)
-def save_tokens(d): save_json(TOKENS_F, d)
-def save_email_history(d): save_json(DATA_DIR+'/email_history.json', d)
 
 def hash_pw(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
@@ -194,10 +173,13 @@ def validate_password(pw):
 
 def current_user():
     uid = session.get('user_id')
-    return get_users().get(uid) if uid else None
+    if not uid:
+        return None
+    result = get_db().users.find_one({'id': uid}, {'_id': 0})
+    return result
 
 
-#-------------------------patterns for offer letter designs-------------------------
+# ── Offer letter patterns ─────────────────────────────────────────────────────
 PATTERNS = {
     'classic': {
         'label':       'Classic',
@@ -251,7 +233,7 @@ PATTERNS = {
 }
 
 
-#  PDF GENERATOR  (pattern-aware)
+# ── PDF Generator ─────────────────────────────────────────────────────────────
 def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''):
     cid      = candidate['id']
     pat      = PATTERNS.get(pattern_key, PATTERNS['classic'])
@@ -272,9 +254,9 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
                             rightMargin=22*mm, leftMargin=22*mm,
                             topMargin=top_margin, bottomMargin=22*mm)
 
-    styles   = getSampleStyleSheet()
-    accent   = colors.HexColor(pat.get('accent', '#0d1b3e'))
-    accent2  = colors.HexColor(pat.get('accent2', '#1a56db'))
+    styles  = getSampleStyleSheet()
+    accent  = colors.HexColor(pat.get('accent',  '#0d1b3e'))
+    accent2 = colors.HexColor(pat.get('accent2', '#1a56db'))
     row_even = colors.HexColor(pat.get('row_even', '#f0f4ff'))
     row_odd  = colors.HexColor(pat.get('row_odd',  '#ffffff'))
 
@@ -283,7 +265,7 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
 
     layout = pat.get('layout', 'classic')
 
-    # ── CUSTOM PATTERN ────────────────────────────────────────────────────────
+    # ── CUSTOM ────────────────────────────────────────────────────────────────
     if layout == 'custom':
         body_style = ps('cb', fontName='Helvetica', fontSize=10.5, leading=18,
                         textColor=colors.HexColor('#1e293b'), spaceAfter=8)
@@ -296,7 +278,7 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
         _build_pdf(doc, buf, story, lh_path, out_path)
         return out_path
 
-    # ── TABLE OF DETAILS (shared by non-custom patterns) ─────────────────────
+    # ── Shared table ──────────────────────────────────────────────────────────
     tbl_data = [
         ['Field', 'Details'],
         ['Candidate Name',     name],
@@ -342,9 +324,9 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
             Paragraph('This offer is contingent upon:',
                       ps('bb2', fontName='Helvetica-Bold', fontSize=10.5,
                          textColor=accent, spaceAfter=6)),
-            Paragraph('• Successful completion of background verification.', ps('b3', fontSize=10.5, leading=17, spaceAfter=4)),
+            Paragraph('• Successful completion of background verification.',  ps('b3', fontSize=10.5, leading=17, spaceAfter=4)),
             Paragraph('• Submission of all required documents before joining.', ps('b4', fontSize=10.5, leading=17, spaceAfter=4)),
-            Paragraph("• Acceptance of the company's Code of Conduct.", ps('b5', fontSize=10.5, leading=17, spaceAfter=8)),
+            Paragraph("• Acceptance of the company's Code of Conduct.",        ps('b5', fontSize=10.5, leading=17, spaceAfter=8)),
             Spacer(1, 12),
             Paragraph('Please accept via the <b>Accept Offer</b> button in your email.',
                       ps('b6', fontSize=10.5, leading=17, spaceAfter=24)),
@@ -405,9 +387,9 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
             Paragraph('Conditions of Offer',
                       ps('mh2', fontName='Helvetica-Bold', fontSize=12,
                          textColor=accent, spaceAfter=6)),
-            Paragraph('• Background verification must be completed successfully.', ps('mc', fontSize=10.5, leading=17, spaceAfter=4)),
+            Paragraph('• Background verification must be completed successfully.', ps('mc',  fontSize=10.5, leading=17, spaceAfter=4)),
             Paragraph('• All required documents must be submitted before joining.', ps('mc2', fontSize=10.5, leading=17, spaceAfter=4)),
-            Paragraph("• You must accept the company's Code of Conduct.", ps('mc3', fontSize=10.5, leading=17, spaceAfter=14)),
+            Paragraph("• You must accept the company's Code of Conduct.",           ps('mc3', fontSize=10.5, leading=17, spaceAfter=14)),
             HRFlowable(width='100%', thickness=1, color=accent2, spaceAfter=12),
             Paragraph('Sincerely,', ps('ms', fontSize=10.5, leading=17, spaceAfter=4)),
             Paragraph(f'<b>{company} — HR Team</b>',
@@ -441,10 +423,8 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
             Paragraph('This offer is subject to background verification and document submission.',
                       ps('mic', fontSize=10, leading=16,
                          textColor=colors.HexColor('#6b7280'), spaceAfter=24)),
-            Paragraph(f'Regards,',
-                      ps('mis', fontSize=10.5, leading=17, spaceAfter=4)),
-            Paragraph(f'{company} HR',
-                      ps('mis2', fontSize=10.5, textColor=accent, spaceAfter=4)),
+            Paragraph('Regards,',         ps('mis',  fontSize=10.5, leading=17, spaceAfter=4)),
+            Paragraph(f'{company} HR',    ps('mis2', fontSize=10.5, textColor=accent, spaceAfter=4)),
         ]
 
     # ── EXECUTIVE ─────────────────────────────────────────────────────────────
@@ -457,7 +437,7 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
             Paragraph('PRIVATE &amp; CONFIDENTIAL',
                       ps('esub', fontSize=8, textColor=colors.HexColor('#9ca3af'),
                          alignment=TA_CENTER, spaceAfter=4)),
-            HRFlowable(width='100%', thickness=3, color=accent, spaceAfter=6),
+            HRFlowable(width='100%', thickness=3, color=accent,  spaceAfter=6),
             HRFlowable(width='100%', thickness=1, color=accent2, spaceAfter=18),
             Paragraph(f'Date: {today}',
                       ps('edt', fontSize=10, spaceAfter=4)),
@@ -479,9 +459,9 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
             Paragraph('Conditions Precedent',
                       ps('eh2', fontName='Helvetica-Bold', fontSize=11,
                          textColor=accent, spaceAfter=6)),
-            Paragraph('1. Satisfactory completion of background and reference verification.', ps('ec', fontSize=10.5, leading=17, spaceAfter=4)),
-            Paragraph('2. Production of original educational and professional documents.', ps('ec2', fontSize=10.5, leading=17, spaceAfter=4)),
-            Paragraph("3. Execution of the Company's Employment Agreement and NDA.", ps('ec3', fontSize=10.5, leading=17, spaceAfter=14)),
+            Paragraph('1. Satisfactory completion of background and reference verification.', ps('ec',  fontSize=10.5, leading=17, spaceAfter=4)),
+            Paragraph('2. Production of original educational and professional documents.',    ps('ec2', fontSize=10.5, leading=17, spaceAfter=4)),
+            Paragraph("3. Execution of the Company's Employment Agreement and NDA.",          ps('ec3', fontSize=10.5, leading=17, spaceAfter=14)),
             Paragraph(
                 'Kindly confirm your acceptance at the earliest convenience by '
                 'clicking <b>Accept Offer</b> in the accompanying email. '
@@ -492,8 +472,8 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
             Paragraph('Yours sincerely,', ps('es', fontSize=10.5, leading=17, spaceAfter=4)),
             Spacer(1, 24),
             Paragraph('_________________________________',
-                      ps('esig', fontSize=10, textColor=colors.HexColor('#9ca3af'), spaceAfter=2)),
-            Paragraph(f'<b>Authorised Signatory</b>',
+                      ps('esig',  fontSize=10, textColor=colors.HexColor('#9ca3af'), spaceAfter=2)),
+            Paragraph('<b>Authorised Signatory</b>',
                       ps('esig2', fontName='Helvetica-Bold', fontSize=10.5,
                          textColor=accent, spaceAfter=2)),
             Paragraph(f'{company}',
@@ -507,7 +487,7 @@ def generate_offer_pdf(candidate, hr_user, pattern_key='classic', custom_text=''
     return out_path
 
 
-# ── helpers ───────────────────────────────────────────────────────────────────
+# ── PDF helpers ───────────────────────────────────────────────────────────────
 def _kv_cell(label, value, accent_color):
     styles = getSampleStyleSheet()
     return Paragraph(
@@ -521,19 +501,19 @@ def _kv_cell(label, value, accent_color):
 
 
 def _make_table(tbl_data, accent, accent2, row_even, row_odd, grid=True):
-    tbl = Table(tbl_data, colWidths=[68*mm, 102*mm])
+    tbl  = Table(tbl_data, colWidths=[68*mm, 102*mm])
     cmds = [
-        ('BACKGROUND',  (0, 0), (-1,  0), accent),
-        ('TEXTCOLOR',   (0, 0), (-1,  0), colors.white),
-        ('FONTNAME',    (0, 0), (-1,  0), 'Helvetica-Bold'),
-        ('FONTSIZE',    (0, 0), (-1,  0), 10),
+        ('BACKGROUND',     (0, 0), (-1,  0), accent),
+        ('TEXTCOLOR',      (0, 0), (-1,  0), colors.white),
+        ('FONTNAME',       (0, 0), (-1,  0), 'Helvetica-Bold'),
+        ('FONTSIZE',       (0, 0), (-1,  0), 10),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [row_even, row_odd]),
-        ('FONTNAME',    (0, 1), (0, -1), 'Helvetica-Bold'),
-        ('FONTNAME',    (1, 1), (1, -1), 'Helvetica'),
-        ('FONTSIZE',    (0, 1), (-1, -1), 10),
-        ('TEXTCOLOR',   (0, 1), (0, -1), accent2),
-        ('ROWPADDING',  (0, 0), (-1, -1), 9),
-        ('VALIGN',      (0, 0), (-1, -1), 'MIDDLE'),
+        ('FONTNAME',       (0, 1), (0,  -1), 'Helvetica-Bold'),
+        ('FONTNAME',       (1, 1), (1,  -1), 'Helvetica'),
+        ('FONTSIZE',       (0, 1), (-1, -1), 10),
+        ('TEXTCOLOR',      (0, 1), (0,  -1), accent2),
+        ('ROWPADDING',     (0, 0), (-1, -1), 9),
+        ('VALIGN',         (0, 0), (-1, -1), 'MIDDLE'),
     ]
     if grid:
         cmds.append(('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')))
@@ -601,7 +581,7 @@ def _merge_letterhead(lh_path, content_bytes, out_path):
         open(out_path, 'wb').write(content_bytes)
 
 
-#  PREVIEW HTML  (pattern-aware, letterhead as background)
+# ── Preview HTML ──────────────────────────────────────────────────────────────
 def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_text=''):
     company  = hr_user['company_name']
     lh_path  = _resolve_lh_path(hr_user.get('letterhead', ''))
@@ -617,7 +597,6 @@ def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_te
     accent  = pat.get('accent',  '#0d1b3e')
     accent2 = pat.get('accent2', '#1a56db')
 
-    # ── Letterhead background block ───────────────────────────────────────────
     lh_bg_style = ''
     lh_notice   = ''
     if lh_path and os.path.exists(lh_path):
@@ -655,7 +634,6 @@ def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_te
                 f'border-radius:6px"></iframe></div>'
             )
 
-    # ── Pattern badge ─────────────────────────────────────────────────────────
     pat_badge = (
         f'<span style="display:inline-block;background:{accent};color:#fff;'
         f'font-size:10px;padding:2px 10px;border-radius:12px;'
@@ -663,7 +641,6 @@ def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_te
         f'{pat["label"]} Template</span>'
     )
 
-    # ── Content varies by pattern ─────────────────────────────────────────────
     layout = pat.get('layout', 'classic')
     rows   = ''.join(
         f'<tr style="background:{"#f0f4ff" if i%2==0 else "#fff"}">'
@@ -818,7 +795,7 @@ def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_te
 </div>'''
 
 
-#  EMAIL HTML BUILDERS
+# ── Email HTML builders ───────────────────────────────────────────────────────
 def offer_email_html(c, hr, accept_link, decline_link):
     company  = hr['company_name']
     name     = c.get('name', '')
@@ -953,25 +930,23 @@ def login_page():
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
-    data = request.json or {}
+    data     = request.json or {}
     username = sanitize_string(data.get('username', ''))
     password = data.get('password', '')
 
     if not username or not password:
         return jsonify({'success': False, 'message': 'Username and password are required'}), 400
 
-    user = next((u for u in get_users().values()
-                 if u['username'] == username
-                 and u['password'] == hash_pw(password)), None)
+    user = get_db().users.find_one(
+        {'username': username, 'password': hash_pw(password)}, {'_id': 0})
     if not user:
         return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
     session['user_id'] = user['id']
-    session.permanent = True
+    session.permanent  = True
     return jsonify({'success': True})
 
 @app.route('/api/register', methods=['POST'])
 def api_register():
-    users        = get_users()
     username     = sanitize_string(request.form.get('username', ''))
     email        = sanitize_string(request.form.get('email', ''))
     password     = request.form.get('password', '')
@@ -980,13 +955,13 @@ def api_register():
 
     if not all([username, email, password, confirm, company_name]):
         return jsonify({'success': False, 'message': 'All fields are required'}), 400
-
     if not validate_email(email):
         return jsonify({'success': False, 'message': 'Invalid email format'}), 400
 
-    if any(u['username'] == username for u in users.values()):
+    db = get_db()
+    if db.users.find_one({'username': username}):
         return jsonify({'success': False, 'message': 'Username already exists'}), 400
-    if any(u['email'] == email for u in users.values()):
+    if db.users.find_one({'email': email}):
         return jsonify({'success': False, 'message': 'Email already registered'}), 400
 
     if password != confirm:
@@ -1009,37 +984,33 @@ def api_register():
     project_lh = os.path.join(BASE_DIR, 'uploads', 'letterheads', fname)
     if not os.path.exists(project_lh):
         shutil.copy2(lh_path, project_lh)
+
     uid = str(uuid.uuid4())
-    users[uid] = {
-        'id': uid,
-        'username': username,
-        'email': email,
-        'password': hash_pw(password),
-        'company_name': company_name,
-        'letterhead': lh_path,
-        'created_at': str(datetime.now()),
-    }
-    save_users(users)
+    db.users.insert_one({
+        'id': uid, 'username': username, 'email': email,
+        'password': hash_pw(password), 'company_name': company_name,
+        'letterhead': lh_path, 'created_at': str(datetime.now()),
+    })
     return jsonify({'success': True})
 
 @app.route('/api/forgot-password', methods=['POST'])
 def api_forgot_password():
     email = sanitize_string((request.json or {}).get('email', ''))
-
     if not email:
         return jsonify({'success': False, 'message': 'Email is required'}), 400
-
     if not validate_email(email):
         return jsonify({'success': False, 'message': 'Invalid email format'}), 400
 
-    user = next((u for u in get_users().values() if u['email'] == email), None)
+    user = get_db().users.find_one({'email': email}, {'_id': 0})
     if not user:
         return jsonify({'success': False, 'message': 'Email not found'}), 404
-    token  = str(uuid.uuid4())
-    tokens = get_tokens()
-    tokens[token] = {'user_id': user['id'],
-                     'expires': str(datetime.now() + timedelta(hours=1))}
-    save_tokens(tokens)
+
+    token = str(uuid.uuid4())
+    get_db().tokens.insert_one({
+        'token':   token,
+        'user_id': user['id'],
+        'expires': str(datetime.now() + timedelta(hours=1)),
+    })
     link = f"{BASE_URL}/reset-password/{token}"
     html = f"""<!DOCTYPE html><html><body style="margin:0;padding:32px 0;
 background:#f0f4fa;font-family:Arial,sans-serif">
@@ -1065,12 +1036,13 @@ background:#f0f4fa;font-family:Arial,sans-serif">
       If you did not request this, ignore this email.</p>
   </td></tr>
 </table></td></tr></table></body></html>"""
-    send_async(email, 'Reset Your OfferFlow Password', html, user_id=user['id'], email_type='password_reset')
+    send_async(email, 'Reset Your OfferFlow Password', html,
+               user_id=user['id'], email_type='password_reset')
     return jsonify({'success': True, 'message': 'Password reset link sent to your email'})
 
 @app.route('/reset-password/<token>')
 def reset_password_page(token):
-    if token not in get_tokens():
+    if not get_db().tokens.find_one({'token': token}):
         return redirect('/login')
     return render_template('reset_password.html', token=token)
 
@@ -1080,18 +1052,17 @@ def api_reset_password():
     token   = data.get('token', '')
     pw      = data.get('password', '')
     confirm = data.get('confirm_password', '')
-    tokens  = get_tokens()
-    if token not in tokens:
+
+    tok = get_db().tokens.find_one({'token': token})
+    if not tok:
         return jsonify({'success': False, 'message': 'Invalid or expired link'}), 400
     if pw != confirm:
         return jsonify({'success': False, 'message': 'Passwords do not match'}), 400
     if not validate_password(pw):
         return jsonify({'success': False, 'message': 'Password requirements not met'}), 400
-    users = get_users()
-    uid   = tokens[token]['user_id']
-    users[uid]['password'] = hash_pw(pw)
-    save_users(users)
-    del tokens[token]; save_tokens(tokens)
+
+    get_db().users.update_one({'id': tok['user_id']}, {'$set': {'password': hash_pw(pw)}})
+    get_db().tokens.delete_one({'token': token})
     return jsonify({'success': True})
 
 @app.route('/logout')
@@ -1110,18 +1081,17 @@ def api_dashboard_stats():
     u = current_user()
     if not u:
         return jsonify({}), 401
-    uid    = u['id']
-    cands  = {k: v for k, v in get_cands().items()  if v.get('hr_id') == uid}
-    verifs = {k: v for k, v in get_verifs().items() if v.get('hr_id') == uid}
+    uid = u['id']
+    db  = get_db()
     return jsonify({
-        'total_offers':         len(cands),
-        'offer_accepted':       sum(1 for c in cands.values()  if c.get('offer_status') == 'accepted'),
-        'offer_declined':       sum(1 for c in cands.values()  if c.get('offer_status') == 'declined'),
-        'action_pending':       sum(1 for c in cands.values()  if c.get('offer_status') == 'pending'),
-        'cancelled':            sum(1 for c in cands.values()  if c.get('offer_status') == 'cancelled'),
-        'verified':             sum(1 for v in verifs.values() if v.get('verification_status') == 'verified'),
-        'rejected':             sum(1 for v in verifs.values() if v.get('verification_status') == 'rejected'),
-        'verification_pending': sum(1 for v in verifs.values() if v.get('verification_status') == 'pending'),
+        'total_offers':         db.candidates.count_documents({'hr_id': uid}),
+        'offer_accepted':       db.candidates.count_documents({'hr_id': uid, 'offer_status': 'accepted'}),
+        'offer_declined':       db.candidates.count_documents({'hr_id': uid, 'offer_status': 'declined'}),
+        'action_pending':       db.candidates.count_documents({'hr_id': uid, 'offer_status': 'pending'}),
+        'cancelled':            db.candidates.count_documents({'hr_id': uid, 'offer_status': 'cancelled'}),
+        'verified':             db.verifications.count_documents({'hr_id': uid, 'verification_status': 'verified'}),
+        'rejected':             db.verifications.count_documents({'hr_id': uid, 'verification_status': 'rejected'}),
+        'verification_pending': db.verifications.count_documents({'hr_id': uid, 'verification_status': 'pending'}),
         'company_name': u['company_name'],
     })
 
@@ -1131,13 +1101,16 @@ def api_offers():
     if not u:
         return jsonify([]), 401
     status = request.args.get('status')
-    result = [{'id': cid, 'name': c['name'], 'role': c.get('role', ''),
-               'joining_date': c.get('joining_date', ''), 'email': c.get('email', ''),
-               'salary': c.get('salary', ''), 'employment_type': c.get('employment_type', ''),
-               'offer_status': c.get('offer_status', 'pending')}
-              for cid, c in get_cands().items() if c.get('hr_id') == u['id']]
+    query  = {'hr_id': u['id']}
     if status:
-        result = [r for r in result if r['offer_status'] == status]
+        query['offer_status'] = status
+    result = [
+        {'id': c['id'], 'name': c['name'], 'role': c.get('role', ''),
+         'joining_date': c.get('joining_date', ''), 'email': c.get('email', ''),
+         'salary': c.get('salary', ''), 'employment_type': c.get('employment_type', ''),
+         'offer_status': c.get('offer_status', 'pending')}
+        for c in get_db().candidates.find(query, {'_id': 0})
+    ]
     return jsonify(result)
 
 @app.route('/api/verifications')
@@ -1146,12 +1119,15 @@ def api_verifications():
     if not u:
         return jsonify([]), 401
     status = request.args.get('status')
-    result = [{'id': vid, 'name': v['name'], 'email': v.get('email', ''),
-               'salary': v.get('salary', ''), 'phone': v.get('phone', ''),
-               'verification_status': v.get('verification_status', 'pending')}
-              for vid, v in get_verifs().items() if v.get('hr_id') == u['id']]
+    query  = {'hr_id': u['id']}
     if status:
-        result = [r for r in result if r['verification_status'] == status]
+        query['verification_status'] = status
+    result = [
+        {'id': v['id'], 'name': v['name'], 'email': v.get('email', ''),
+         'salary': v.get('salary', ''), 'phone': v.get('phone', ''),
+         'verification_status': v.get('verification_status', 'pending')}
+        for v in get_db().verifications.find(query, {'_id': 0})
+    ]
     return jsonify(result)
 
 @app.route('/upload-excel')
@@ -1191,28 +1167,27 @@ def api_save_candidates():
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-    data  = request.json or {}
-    cands = get_cands()
+    data    = request.json or {}
     new_ids = []
+    db      = get_db()
     for rec in data.get('candidates', []):
         cid = str(uuid.uuid4())
-        cands[cid] = {
+        db.candidates.insert_one({
             'id': cid, 'hr_id': u['id'],
-            'name':          rec.get('Name', ''),
-            'email':         rec.get('Gmail id', ''),
-            'role':          rec.get('Role', ''),
-            'joining_date':  str(rec.get('Joining date', '')),
-            'salary':        str(rec.get('Salary', '')),
+            'name':            rec.get('Name', ''),
+            'email':           rec.get('Gmail id', ''),
+            'role':            rec.get('Role', ''),
+            'joining_date':    str(rec.get('Joining date', '')),
+            'salary':          str(rec.get('Salary', '')),
             'employment_type': data.get('employment_type', 'full_time'),
-            'pattern':       data.get('pattern', 'classic'),
-            'custom_text':   data.get('custom_text', ''),
-            'offer_status':  'pending',
-            'sent_at':       str(datetime.now()),
+            'pattern':         data.get('pattern', 'classic'),
+            'custom_text':     data.get('custom_text', ''),
+            'offer_status':    'pending',
+            'sent_at':         str(datetime.now()),
             'extra': {k: v for k, v in rec.items()
                       if k not in ['Name', 'Gmail id', 'Role', 'Joining date', 'Salary']},
-        }
+        })
         new_ids.append(cid)
-    save_cands(cands)
     return jsonify({'success': True, 'candidate_ids': new_ids})
 
 @app.route('/api/patterns')
@@ -1247,17 +1222,18 @@ def api_send_offer_emails():
     if not u:
         return jsonify({'success': False}), 401
 
-    data  = request.json or {}
-    cids  = data.get('candidate_ids', [])
-    cands = get_cands()
-    sent  = 0
-    failed = []  # track failures
+    data   = request.json or {}
+    cids   = data.get('candidate_ids', [])
+    db     = get_db()
+    sent   = 0
+    failed = []
 
     for cid in cids:
-        c = cands.get(cid)
+        c = db.candidates.find_one({'id': cid}, {'_id': 0})
         if not c:
             continue
         if c.get('email_sent_at'):
+            logger.info(f'Email already sent to {c["email"]}')
             continue
 
         accept_link  = f"{BASE_URL}/offer-response/{cid}/accept"
@@ -1272,28 +1248,26 @@ def api_send_offer_emails():
             pdf_path = None
 
         subject = f"Job Offer — {c.get('role', '')} at {u['company_name']}"
-        ok = send_async(   # now synchronous, returns True/False
+        ok = send_async(
             c['email'], subject,
             offer_email_html(c, u, accept_link, decline_link),
             attach_path=pdf_path,
             attach_name=f"Offer_Letter_{c['name'].replace(' ', '_')}.pdf",
-            user_id=u['id'],
-            candidate_id=cid,
-            email_type='offer')
+            user_id=u['id'], candidate_id=cid, email_type='offer')
 
         if ok:
-            cands[cid]['email_sent_at'] = str(datetime.now())
+            db.candidates.update_one({'id': cid},
+                                     {'$set': {'email_sent_at': str(datetime.now())}})
             sent += 1
         else:
             failed.append({'id': cid, 'email': c['email']})
 
-    save_cands(cands)
     return jsonify({'success': True, 'sent': sent, 'failed': failed})
 
 @app.route('/offer-response/<cid>/<action>')
 def offer_response(cid, action):
-    cands = get_cands()
-    c     = cands.get(cid)
+    db = get_db()
+    c  = db.candidates.find_one({'id': cid}, {'_id': 0})
     if not c:
         return ("<div style='font-family:sans-serif;text-align:center;margin-top:80px'>"
                 "<h2>Invalid or expired link.</h2></div>"), 404
@@ -1305,16 +1279,16 @@ def offer_response(cid, action):
             candidate=c)
 
     if action == 'accept':
-        c['offer_status']  = 'accepted'
-        c['responded_at']  = str(datetime.now())
-        save_cands(cands)
+        db.candidates.update_one({'id': cid}, {'$set': {
+            'offer_status': 'accepted',
+            'responded_at': str(datetime.now()),
+        }})
+        c = db.candidates.find_one({'id': cid}, {'_id': 0})
 
-        verifs   = get_verifs()
-        existing = next((v for v in verifs.values() if v.get('candidate_id') == cid), None)
-
+        existing = db.verifications.find_one({'candidate_id': cid})
         if not existing:
             vid = str(uuid.uuid4())
-            verifs[vid] = {
+            db.verifications.insert_one({
                 'id':                  vid,
                 'candidate_id':        cid,
                 'hr_id':               c['hr_id'],
@@ -1324,37 +1298,31 @@ def offer_response(cid, action):
                 'phone':               '',
                 'verification_status': 'pending',
                 'created_at':          str(datetime.now()),
-            }
-            save_verifs(verifs)
-
+            })
             bg_link = f"{BASE_URL}/background-verification/{vid}"
-            users   = get_users()
-            hr      = users.get(c['hr_id'], {})
+            hr      = db.users.find_one({'id': c['hr_id']}, {'_id': 0}) or {}
             company = hr.get('company_name', 'the company')
-
             send_async(
                 c['email'],
                 f'Next Step: Complete Your Background Verification — {company}',
                 bg_verification_email_html(c, bg_link, company),
-                user_id=c['hr_id'],
-                candidate_id=cid,
-                email_type='verification'
-            )
+                user_id=c['hr_id'], candidate_id=cid, email_type='verification')
 
         return render_template('offer_accepted.html', candidate=c)
 
     elif action == 'decline':
-        c['offer_status'] = 'declined'
-        c['responded_at'] = str(datetime.now())
-        save_cands(cands)
+        db.candidates.update_one({'id': cid}, {'$set': {
+            'offer_status': 'declined',
+            'responded_at': str(datetime.now()),
+        }})
+        c = db.candidates.find_one({'id': cid}, {'_id': 0})
         return render_template('offer_declined.html', candidate=c)
 
     return "<div style='font-family:sans-serif;text-align:center;margin-top:80px'><h2>Invalid action.</h2></div>"
 
 @app.route('/background-verification/<vid>')
 def background_verification(vid):
-    verifs = get_verifs()
-    v      = verifs.get(vid)
+    v = get_db().verifications.find_one({'id': vid}, {'_id': 0})
     if not v:
         return ("<div style='font-family:sans-serif;text-align:center;margin-top:80px'>"
                 "<h2>Invalid or expired link.</h2></div>"), 404
@@ -1362,9 +1330,9 @@ def background_verification(vid):
 
 @app.route('/api/submit-verification', methods=['POST'])
 def api_submit_verification():
-    vid    = request.form.get('verification_id')
-    verifs = get_verifs()
-    v      = verifs.get(vid)
+    vid = request.form.get('verification_id')
+    db  = get_db()
+    v   = db.verifications.find_one({'id': vid}, {'_id': 0})
     if not v:
         return jsonify({'success': False}), 404
     step = request.form.get('step')
@@ -1372,29 +1340,40 @@ def api_submit_verification():
     if step == '1':
         fn = request.form.get('first_name', '')
         ln = request.form.get('last_name', '')
-        v.update({'first_name': fn, 'last_name': ln, 'name': f"{fn} {ln}",
-                  'phone':   request.form.get('phone', ''),
-                  'aadhaar': request.form.get('aadhaar', ''),
-                  'pan':     request.form.get('pan', '')})
+        db.verifications.update_one({'id': vid}, {'$set': {
+            'first_name': fn, 'last_name': ln, 'name': f"{fn} {ln}",
+            'phone':   request.form.get('phone', ''),
+            'aadhaar': request.form.get('aadhaar', ''),
+            'pan':     request.form.get('pan', ''),
+        }})
+
     elif step == '2':
-        v.update({'college':        request.form.get('college', ''),
-                  'specialization': request.form.get('specialization', ''),
-                  'percentage':     request.form.get('percentage', '')})
+        db.verifications.update_one({'id': vid}, {'$set': {
+            'college':        request.form.get('college', ''),
+            'specialization': request.form.get('specialization', ''),
+            'percentage':     request.form.get('percentage', ''),
+        }})
+
     elif step == '3':
-        ctype    = request.form.get('candidate_type', 'fresher')
-        v['candidate_type'] = ctype
-        users    = get_users()
-        hr       = users.get(v.get('hr_id', ''), {})
-        company  = hr.get('company_name', 'the company')
+        ctype   = request.form.get('candidate_type', 'fresher')
+        hr      = db.users.find_one({'id': v.get('hr_id', '')}, {'_id': 0}) or {}
+        company = hr.get('company_name', 'the company')
 
         if ctype == 'experienced':
             prev_co   = request.form.get('prev_company', '')
             prev_role = request.form.get('prev_role', '')
             co_email  = request.form.get('company_email', '')
             duration  = request.form.get('duration', '')
-            v.update({'prev_company': prev_co, 'prev_role': prev_role,
-                      'company_email': co_email, 'duration': duration})
-            v['verification_status'] = 'pending'
+            db.verifications.update_one({'id': vid}, {'$set': {
+                'candidate_type':    ctype,
+                'prev_company':      prev_co,
+                'prev_role':         prev_role,
+                'company_email':     co_email,
+                'duration':          duration,
+                'verification_status': 'pending',
+                'submitted_at':      str(datetime.now()),
+            }})
+            v = db.verifications.find_one({'id': vid}, {'_id': 0})
             vlink = f"{BASE_URL}/company-verify/{vid}/verify"
             rlink = f"{BASE_URL}/company-verify/{vid}/reject"
             send_async(co_email,
@@ -1432,11 +1411,14 @@ def api_submit_verification():
     </tr></table>
   </td></tr>
 </table></td></tr></table></body></html>""",
-                user_id=v.get('hr_id'),
-                candidate_id=vid,
+                user_id=v.get('hr_id'), candidate_id=vid,
                 email_type='employment_verification')
         else:
-            v['verification_status'] = 'verified'
+            db.verifications.update_one({'id': vid}, {'$set': {
+                'candidate_type':      ctype,
+                'verification_status': 'verified',
+                'submitted_at':        str(datetime.now()),
+            }})
             send_async(v['email'], '🎉 Background Verification Complete!',
                 f"""<html><body style="font-family:Arial;margin:0;padding:32px 0;background:#f0f4fa">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
@@ -1454,26 +1436,24 @@ def api_submit_verification():
     </p>
   </td></tr>
 </table></td></tr></table></body></html>""",
-                user_id=v.get('hr_id'),
-                candidate_id=vid,
+                user_id=v.get('hr_id'), candidate_id=vid,
                 email_type='verification_complete')
-        v['submitted_at'] = str(datetime.now())
 
-    save_verifs(verifs)
+    v = db.verifications.find_one({'id': vid}, {'_id': 0})
     return jsonify({'success': True, 'status': v.get('verification_status')})
 
 @app.route('/company-verify/<vid>/<action>')
 def company_verify(vid, action):
-    verifs = get_verifs()
-    v      = verifs.get(vid)
+    db = get_db()
+    v  = db.verifications.find_one({'id': vid}, {'_id': 0})
     if not v:
         return "<div style='font-family:sans-serif;text-align:center;margin-top:80px'><h2>Invalid link.</h2></div>", 404
-    users   = get_users()
-    hr      = users.get(v.get('hr_id', ''), {})
+    hr      = db.users.find_one({'id': v.get('hr_id', '')}, {'_id': 0}) or {}
     company = hr.get('company_name', 'the company')
 
     if action == 'verify':
-        v['verification_status'] = 'verified'
+        db.verifications.update_one({'id': vid},
+                                    {'$set': {'verification_status': 'verified'}})
         send_async(v['email'], '✅ Employment Verified — Welcome Aboard!',
             f"""<html><body style="font-family:Arial;margin:0;padding:32px 0;background:#f0f4fa">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
@@ -1491,12 +1471,12 @@ def company_verify(vid, action):
     </p>
   </td></tr>
 </table></td></tr></table></body></html>""",
-            user_id=v.get('hr_id'),
-            candidate_id=vid,
+            user_id=v.get('hr_id'), candidate_id=vid,
             email_type='verification_verified')
 
     elif action == 'reject':
-        v['verification_status'] = 'rejected'
+        db.verifications.update_one({'id': vid},
+                                    {'$set': {'verification_status': 'rejected'}})
         send_async(v['email'], 'Update on Your Application',
             f"""<html><body style="font-family:Arial;margin:0;padding:32px 0;background:#f0f4fa">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
@@ -1513,11 +1493,10 @@ def company_verify(vid, action):
     </p>
   </td></tr>
 </table></td></tr></table></body></html>""",
-            user_id=v.get('hr_id'),
-            candidate_id=vid,
+            user_id=v.get('hr_id'), candidate_id=vid,
             email_type='verification_rejected')
 
-    save_verifs(verifs)
+    v = db.verifications.find_one({'id': vid}, {'_id': 0})
     return render_template('company_verify_done.html', action=action, candidate=v)
 
 @app.route('/api/download-template')
@@ -1525,11 +1504,11 @@ def download_template():
     u = current_user()
     if not u:
         return redirect('/login')
-    cands = {k: v for k, v in get_cands().items() if v.get('hr_id') == u['id']}
+    cands = list(get_db().candidates.find({'hr_id': u['id']}, {'_id': 0}))
     rows  = [{'Name': c['name'], 'Gmail id': c['email'], 'Role': c['role'],
               'Joining date': c['joining_date'], 'Salary': c['salary'],
               'Employment Type': c['employment_type'], 'Status': c['offer_status']}
-             for c in cands.values()] or \
+             for c in cands] or \
             [{'Name': '', 'Gmail id': '', 'Role': '', 'Joining date': '',
               'Salary': '', 'Employment Type': '', 'Status': ''}]
     df   = pd.DataFrame(rows)
@@ -1555,25 +1534,19 @@ def api_update_profile():
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-
-    data = request.json or {}
-    email = sanitize_string(data.get('email', ''))
+    data         = request.json or {}
+    email        = sanitize_string(data.get('email', ''))
     company_name = sanitize_string(data.get('company_name', ''))
-
     if not email or not company_name:
         return jsonify({'success': False, 'message': 'All fields are required'}), 400
-
     if not validate_email(email):
         return jsonify({'success': False, 'message': 'Invalid email format'}), 400
-
-    users = get_users()
-    if email != u['email'] and any(u['email'] == email for u in users.values()):
+    db = get_db()
+    existing = db.users.find_one({'email': email, 'id': {'$ne': u['id']}})
+    if existing:
         return jsonify({'success': False, 'message': 'Email already registered'}), 400
-
-    users[u['id']]['email'] = email
-    users[u['id']]['company_name'] = company_name
-    save_users(users)
-
+    db.users.update_one({'id': u['id']},
+                        {'$set': {'email': email, 'company_name': company_name}})
     logger.info(f'User {u["id"]} updated profile')
     return jsonify({'success': True})
 
@@ -1582,25 +1555,18 @@ def api_change_password():
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-
-    data = request.json or {}
+    data             = request.json or {}
     current_password = data.get('current_password', '')
-    new_password = data.get('new_password', '')
-
+    new_password     = data.get('new_password', '')
     if not current_password or not new_password:
         return jsonify({'success': False, 'message': 'All fields are required'}), 400
-
     if u['password'] != hash_pw(current_password):
         return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
-
     if not validate_password(new_password):
         return jsonify({'success': False, 'message':
             'Password needs 8+ chars, uppercase, lowercase & special character'}), 400
-
-    users = get_users()
-    users[u['id']]['password'] = hash_pw(new_password)
-    save_users(users)
-
+    get_db().users.update_one({'id': u['id']},
+                              {'$set': {'password': hash_pw(new_password)}})
     logger.info(f'User {u["id"]} changed password')
     return jsonify({'success': True})
 
@@ -1609,7 +1575,6 @@ def api_update_letterhead():
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-
     lh = request.files.get('letterhead')
     if not lh or not lh.filename:
         return jsonify({'success': False, 'message': 'Letterhead file is required'}), 400
@@ -1617,19 +1582,13 @@ def api_update_letterhead():
         return jsonify({'success': False, 'message': 'Letterhead must be a PDF file'}), 400
     if not validate_file_size(lh, max_size_mb=5):
         return jsonify({'success': False, 'message': 'Letterhead file size must be less than 5MB'}), 400
-
-    fname = secure_filename(lh.filename)
+    fname   = secure_filename(lh.filename)
     lh_path = os.path.join(UPLOAD_DIR, 'letterheads', fname)
     lh.save(lh_path)
-
     project_lh = os.path.join(BASE_DIR, 'uploads', 'letterheads', fname)
     if not os.path.exists(project_lh):
         shutil.copy2(lh_path, project_lh)
-
-    users = get_users()
-    users[u['id']]['letterhead'] = lh_path
-    save_users(users)
-
+    get_db().users.update_one({'id': u['id']}, {'$set': {'letterhead': lh_path}})
     logger.info(f'User {u["id"]} updated letterhead')
     return jsonify({'success': True})
 
@@ -1638,56 +1597,45 @@ def api_email_history():
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-
-    history = get_email_history()
-    user_emails = [email for email in history.values() if email.get('user_id') == u['id']]
-    user_emails.sort(key=lambda x: x.get('sent_at', ''), reverse=True)
-
-    return jsonify({'success': True, 'emails': user_emails})
+    emails = list(get_db().email_history.find(
+        {'user_id': u['id']}, {'_id': 0},
+        sort=[('sent_at', -1)]))
+    return jsonify({'success': True, 'emails': emails})
 
 @app.route('/api/download-offer-letter/<cid>')
 def download_offer_letter(cid):
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-
-    cands = get_cands()
-    c = cands.get(cid)
-
+    c = get_db().candidates.find_one({'id': cid}, {'_id': 0})
     if not c:
         return jsonify({'success': False, 'message': 'Candidate not found'}), 404
-
     if c.get('hr_id') != u['id']:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-
     pdf_path = os.path.join(LETTER_DIR, f"offer_{cid}.pdf")
     if not os.path.exists(pdf_path):
-        return jsonify({'success': False, 'message': 'Offer letter not found. Please send the offer first.'}), 404
-
-    return send_file(pdf_path, as_attachment=True, download_name=f"Offer_Letter_{c['name'].replace(' ', '_')}.pdf")
+        return jsonify({'success': False,
+            'message': 'Offer letter not found. Please send the offer first.'}), 404
+    return send_file(pdf_path, as_attachment=True,
+                     download_name=f"Offer_Letter_{c['name'].replace(' ', '_')}.pdf")
 
 @app.route('/api/cancel-offer/<cid>', methods=['POST'])
 def cancel_offer(cid):
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-
-    cands = get_cands()
-    c = cands.get(cid)
-
+    db = get_db()
+    c  = db.candidates.find_one({'id': cid}, {'_id': 0})
     if not c:
         return jsonify({'success': False, 'message': 'Candidate not found'}), 404
-
     if c.get('hr_id') != u['id']:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-
     if c.get('offer_status') != 'pending':
         return jsonify({'success': False, 'message': 'Can only cancel pending offers'}), 400
-
-    c['offer_status'] = 'cancelled'
-    c['cancelled_at'] = str(datetime.now())
-    save_cands(cands)
-
+    db.candidates.update_one({'id': cid}, {'$set': {
+        'offer_status': 'cancelled',
+        'cancelled_at': str(datetime.now()),
+    }})
     logger.info(f'Offer cancelled for candidate {cid} by user {u["id"]}')
     return jsonify({'success': True, 'message': 'Offer cancelled successfully'})
 
@@ -1696,16 +1644,11 @@ def get_candidate(cid):
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-
-    cands = get_cands()
-    c = cands.get(cid)
-
+    c = get_db().candidates.find_one({'id': cid}, {'_id': 0})
     if not c:
         return jsonify({'success': False, 'message': 'Candidate not found'}), 404
-
     if c.get('hr_id') != u['id']:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-
     return jsonify({'success': True, 'candidate': c})
 
 @app.route('/api/update-candidate/<cid>', methods=['POST'])
@@ -1713,72 +1656,89 @@ def update_candidate(cid):
     u = current_user()
     if not u:
         return jsonify({'success': False}), 401
-
-    cands = get_cands()
-    c = cands.get(cid)
-
+    db = get_db()
+    c  = db.candidates.find_one({'id': cid}, {'_id': 0})
     if not c:
         return jsonify({'success': False, 'message': 'Candidate not found'}), 404
-
     if c.get('hr_id') != u['id']:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-
     if c.get('email_sent_at'):
-        return jsonify({'success': False, 'message': 'Cannot edit candidate after email is sent'}), 400
-
-    data = request.json or {}
-
-    allowed_fields = ['name', 'email', 'role', 'joining_date', 'salary', 'employment_type']
-    for field in allowed_fields:
+        return jsonify({'success': False,
+            'message': 'Cannot edit candidate after email is sent'}), 400
+    data    = request.json or {}
+    updates = {}
+    for field in ['name', 'email', 'role', 'joining_date', 'salary', 'employment_type']:
         if field in data:
-            c[field] = sanitize_string(data[field])
-
-    if 'email' in data and not validate_email(c['email']):
+            updates[field] = sanitize_string(data[field])
+    if 'email' in updates and not validate_email(updates['email']):
         return jsonify({'success': False, 'message': 'Invalid email format'}), 400
-
-    save_cands(cands)
-
+    db.candidates.update_one({'id': cid}, {'$set': updates})
     logger.info(f'Candidate {cid} updated by user {u["id"]}')
     return jsonify({'success': True, 'message': 'Candidate updated successfully'})
 
+# ── Debug route (remove after confirming env vars on Vercel) ──────────────────
+@app.route('/api/debug-env')
+def debug_env():
+    return jsonify({
+        'brevo_key_set': bool(BREVO_API_KEY),
+        'sender_email':  SENDER_EMAIL,
+        'sender_name':   SENDER_NAME,
+        'base_url':      BASE_URL,
+        'is_vercel':     IS_VERCEL,
+        'mongo_set':     bool(MONGO_URI),
+    })
 
-def send_email(to, subject, html_body, attach_path=None, attach_name=None, user_id=None, candidate_id=None, email_type='offer'):
+
+# ── Email sender (synchronous — threads are killed on Vercel) ─────────────────
+def send_async(to, subject, html, attach_path=None, attach_name=None,
+               user_id=None, candidate_id=None, email_type='offer'):
+    """Synchronous on Vercel; background thread locally for speed."""
+    if IS_VERCEL:
+        return send_email(to, subject, html, attach_path, attach_name,
+                          user_id, candidate_id, email_type)
+    t = threading.Thread(
+        target=send_email,
+        args=(to, subject, html, attach_path, attach_name,
+              user_id, candidate_id, email_type),
+        daemon=True)
+    t.start()
+    return True   # optimistic on local
+
+
+def send_email(to, subject, html_body, attach_path=None, attach_name=None,
+               user_id=None, candidate_id=None, email_type='offer'):
     if not BREVO_API_KEY:
-        logger.error('BREVO_API_KEY is not set — check your .env file')
+        logger.error('BREVO_API_KEY is not set')
         return False
 
     email_id = str(uuid.uuid4())
-    success = False
+    success  = False
     error_msg = None
 
     try:
         configuration = sib_api_v3_sdk.Configuration()
         configuration.api_key['api-key'] = BREVO_API_KEY
-
-        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
-            sib_api_v3_sdk.ApiClient(configuration)
-        )
+        api_instance  = sib_api_v3_sdk.TransactionalEmailsApi(
+            sib_api_v3_sdk.ApiClient(configuration))
 
         attachments = []
         if attach_path and os.path.exists(attach_path):
             with open(attach_path, 'rb') as f:
                 encoded_file = base64.b64encode(f.read()).decode()
-            attachments.append({
-                'content': encoded_file,
-                'name': attach_name or 'offer_letter.pdf'
-            })
+            attachments.append({'content': encoded_file,
+                                 'name': attach_name or 'offer_letter.pdf'})
 
         email_params = {
-            'to': [{'email': to}],
-            'sender': {'name': SENDER_NAME, 'email': SENDER_EMAIL},
-            'subject': subject,
-            'html_content': html_body
+            'to':           [{'email': to}],
+            'sender':       {'name': SENDER_NAME, 'email': SENDER_EMAIL},
+            'subject':      subject,
+            'html_content': html_body,
         }
         if attachments:
             email_params['attachment'] = attachments
 
-        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(**email_params)
-        api_instance.send_transac_email(send_smtp_email)
+        api_instance.send_transac_email(
+            sib_api_v3_sdk.SendSmtpEmail(**email_params))
         logger.info(f'Email sent to {to}')
         success = True
 
@@ -1789,25 +1749,24 @@ def send_email(to, subject, html_body, attach_path=None, attach_name=None, user_
         logger.error(f'General email error: {e}')
         error_msg = str(e)
 
-    history = get_email_history()
-    history[email_id] = {
-        'id': email_id,
-        'user_id': user_id,
-        'candidate_id': candidate_id,
-        'email_type': email_type,
-        'to': to,
-        'subject': subject,
-        'sent_at': str(datetime.now()),
-        'status': 'sent' if success else 'failed',
-        'error': error_msg,
-        'has_attachment': bool(attach_path)
-    }
-    save_email_history(history)
+    # Log to MongoDB
+    try:
+        get_db().email_history.insert_one({
+            'id':             email_id,
+            'user_id':        user_id,
+            'candidate_id':   candidate_id,
+            'email_type':     email_type,
+            'to':             to,
+            'subject':        subject,
+            'sent_at':        str(datetime.now()),
+            'status':         'sent' if success else 'failed',
+            'error':          error_msg,
+            'has_attachment': bool(attach_path),
+        })
+    except Exception as e:
+        logger.warning(f'Failed to log email history: {e}')
 
     return success
-
-def send_async(to, subject, html, attach_path=None, attach_name=None, user_id=None, candidate_id=None, email_type='offer'):
-    send_email(to, subject, html, attach_path, attach_name, user_id, candidate_id, email_type)
 
 
 if __name__ == '__main__':
