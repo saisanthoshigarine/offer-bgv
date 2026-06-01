@@ -1251,24 +1251,28 @@ def api_send_offer_emails():
     cids  = data.get('candidate_ids', [])
     cands = get_cands()
     sent  = 0
+    failed = []  # track failures
+
     for cid in cids:
         c = cands.get(cid)
         if not c:
             continue
         if c.get('email_sent_at'):
-            logger.info(f'Email already sent to {c["email"]}')
             continue
+
         accept_link  = f"{BASE_URL}/offer-response/{cid}/accept"
         decline_link = f"{BASE_URL}/offer-response/{cid}/decline"
         pattern_key  = c.get('pattern', 'classic')
         custom_text  = c.get('custom_text', '')
+
         try:
             pdf_path = generate_offer_pdf(c, u, pattern_key, custom_text)
         except Exception as e:
-            logger.error(f'PDF generation failed for candidate {cid}: {e}')
+            logger.error(f'PDF generation failed for {cid}: {e}')
             pdf_path = None
+
         subject = f"Job Offer — {c.get('role', '')} at {u['company_name']}"
-        send_async(
+        ok = send_async(   # now synchronous, returns True/False
             c['email'], subject,
             offer_email_html(c, u, accept_link, decline_link),
             attach_path=pdf_path,
@@ -1276,11 +1280,15 @@ def api_send_offer_emails():
             user_id=u['id'],
             candidate_id=cid,
             email_type='offer')
-        cands[cid]['email_sent_at'] = str(datetime.now())
-        sent += 1
+
+        if ok:
+            cands[cid]['email_sent_at'] = str(datetime.now())
+            sent += 1
+        else:
+            failed.append({'id': cid, 'email': c['email']})
 
     save_cands(cands)
-    return jsonify({'success': True, 'sent': sent})
+    return jsonify({'success': True, 'sent': sent, 'failed': failed})
 
 @app.route('/offer-response/<cid>/<action>')
 def offer_response(cid, action):
@@ -1798,14 +1806,8 @@ def send_email(to, subject, html_body, attach_path=None, attach_name=None, user_
 
     return success
 
-
 def send_async(to, subject, html, attach_path=None, attach_name=None, user_id=None, candidate_id=None, email_type='offer'):
-    t = threading.Thread(
-        target=send_email,
-        args=(to, subject, html, attach_path, attach_name, user_id, candidate_id, email_type),
-        daemon=True
-    )
-    t.start()
+    send_email(to, subject, html, attach_path, attach_name, user_id, candidate_id, email_type)
 
 
 if __name__ == '__main__':
