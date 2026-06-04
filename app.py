@@ -1362,59 +1362,72 @@ def background_verification(vid):
 
 @app.route('/api/submit-verification', methods=['POST'])
 def api_submit_verification():
+    vid    = request.form.get('verification_id')
+    verifs = get_verifs()
+    v      = verifs.get(vid)
+
+    if not v:
+        return jsonify({'success': False, 'message': 'Verification not found'}), 404
+
+    step = request.form.get('step')
+
     try:
-        vid    = request.form.get('verification_id')
-        verifs = get_verifs()
-        v      = verifs.get(vid)
-        if not v:
-            return jsonify({'success': False}), 404
-        step = request.form.get('step')
-        # ... rest of the function body unchanged, indented one level ...
+        if step == '1':
+            fn = request.form.get('first_name', '')
+            ln = request.form.get('last_name', '')
+            v.update({
+                'first_name': fn,
+                'last_name':  ln,
+                'name':       f"{fn} {ln}",
+                'phone':      request.form.get('phone', ''),
+                'aadhaar':    request.form.get('aadhaar', ''),
+                'pan':        request.form.get('pan', ''),
+            })
 
-        save_verifs(verifs)
-        return jsonify({'success': True, 'status': v.get('verification_status')})
+        elif step == '2':
+            v.update({
+                'college':        request.form.get('college', ''),
+                'specialization': request.form.get('specialization', ''),
+                'percentage':     request.form.get('percentage', ''),
+            })
 
-    except Exception as e:
-        logger.error(f'Verification submit error: {e}', exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+        elif step == '3':
+            ctype = request.form.get('candidate_type', 'fresher')
+            v['candidate_type'] = ctype
 
-    if step == '1':
-        fn = request.form.get('first_name', '')
-        ln = request.form.get('last_name', '')
-        v.update({'first_name': fn, 'last_name': ln, 'name': f"{fn} {ln}",
-                  'phone':   request.form.get('phone', ''),
-                  'aadhaar': request.form.get('aadhaar', ''),
-                  'pan':     request.form.get('pan', '')})
-    elif step == '2':
-        v.update({'college':        request.form.get('college', ''),
-                  'specialization': request.form.get('specialization', ''),
-                  'percentage':     request.form.get('percentage', '')})
-    elif step == '3':
-        ctype    = request.form.get('candidate_type', 'fresher')
-        v['candidate_type'] = ctype
-        users    = get_users()
-        hr       = users.get(v.get('hr_id', ''), {})
-        company  = hr.get('company_name', 'the company')
+            users   = get_users()
+            hr      = users.get(v.get('hr_id', ''), {})
+            company = hr.get('company_name', 'the company')
 
-        if ctype == 'experienced':
-            prev_co   = request.form.get('prev_company', '')
-            prev_role = request.form.get('prev_role', '')
-            co_email  = request.form.get('company_email', '')
-            duration  = request.form.get('duration', '')
-            v.update({'prev_company': prev_co, 'prev_role': prev_role,
-                      'company_email': co_email, 'duration': duration})
-            v['verification_status'] = 'pending'
-            vlink = f"{BASE_URL}/company-verify/{vid}/verify"
-            rlink = f"{BASE_URL}/company-verify/{vid}/reject"
-            send_async(co_email,
-                f"Employment Verification Request — {v['name']}",
-                f"""<html><body style="font-family:Arial;margin:0;padding:32px 0;background:#f0f4fa">
+            if ctype == 'experienced':
+                prev_co   = request.form.get('prev_company', '')
+                prev_role = request.form.get('prev_role', '')
+                co_email  = request.form.get('company_email', '')
+                duration  = request.form.get('duration', '')
+
+                v.update({
+                    'prev_company':  prev_co,
+                    'prev_role':     prev_role,
+                    'company_email': co_email,
+                    'duration':      duration,
+                })
+                v['verification_status'] = 'pending'
+
+                vlink = f"{BASE_URL}/company-verify/{vid}/verify"
+                rlink = f"{BASE_URL}/company-verify/{vid}/reject"
+
+                send_async(
+                    co_email,
+                    f"Employment Verification Request — {v['name']}",
+                    f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="font-family:Arial;margin:0;padding:32px 0;background:#f0f4fa">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table width="540" style="background:#fff;border-radius:16px;overflow:hidden;
                           box-shadow:0 4px 20px rgba(0,0,0,.08)">
   <tr><td style="background:linear-gradient(135deg,#0d1b3e,#1a56db);
                  padding:28px;text-align:center">
-    <div style="font-size:20px;font-weight:900;color:#fff">Employment Verification Request</div>
+    <div style="font-size:20px;font-weight:900;color:#fff">
+      Employment Verification Request</div>
   </td></tr>
   <tr><td style="padding:36px">
     <p style="font-size:14px;color:#1e293b;line-height:1.8">
@@ -1441,18 +1454,25 @@ def api_submit_verification():
     </tr></table>
   </td></tr>
 </table></td></tr></table></body></html>""",
-                user_id=v.get('hr_id'),
-                candidate_id=vid,
-                email_type='employment_verification')
-        else:
-            v['verification_status'] = 'verified'
-            send_async(v['email'], '🎉 Background Verification Complete!',
-                f"""<html><body style="font-family:Arial;margin:0;padding:32px 0;background:#f0f4fa">
+                    user_id=v.get('hr_id'),
+                    candidate_id=vid,
+                    email_type='employment_verification',
+                )
+
+            else:  # fresher
+                v['verification_status'] = 'verified'
+
+                send_async(
+                    v['email'],
+                    '🎉 Background Verification Complete!',
+                    f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="font-family:Arial;margin:0;padding:32px 0;background:#f0f4fa">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table width="500" style="background:#fff;border-radius:16px;overflow:hidden">
   <tr><td style="background:linear-gradient(135deg,#10b981,#059669);
                  padding:28px;text-align:center">
-    <div style="font-size:20px;font-weight:900;color:#fff">Verification Successful ✅</div>
+    <div style="font-size:20px;font-weight:900;color:#fff">
+      Verification Successful ✅</div>
   </td></tr>
   <tr><td style="padding:36px;text-align:center">
     <div style="font-size:44px;margin-bottom:14px">🎊</div>
@@ -1463,13 +1483,22 @@ def api_submit_verification():
     </p>
   </td></tr>
 </table></td></tr></table></body></html>""",
-                user_id=v.get('hr_id'),
-                candidate_id=vid,
-                email_type='verification_complete')
-        v['submitted_at'] = str(datetime.now())
+                    user_id=v.get('hr_id'),
+                    candidate_id=vid,
+                    email_type='verification_complete',
+                )
 
-    save_verifs(verifs)
-    return jsonify({'success': True, 'status': v.get('verification_status')})
+            v['submitted_at'] = str(datetime.now())
+
+        else:
+            return jsonify({'success': False, 'message': f'Invalid step: {step}'}), 400
+
+        save_verifs(verifs)
+        return jsonify({'success': True, 'status': v.get('verification_status')})
+
+    except Exception as e:
+        logger.error(f'Verification submit error (step={step}, vid={vid}): {e}', exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/company-verify/<vid>/<action>')
 def company_verify(vid, action):
