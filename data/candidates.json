@@ -363,5 +363,22 @@
       "Status": "Selected "
     },
     "email_sent_at": "2026-05-31 17:00:30.607165"
+  },
+  "2eead8e3-66b9-4e99-bd60-50deb7caa0e2": {
+    "id": "2eead8e3-66b9-4e99-bd60-50deb7caa0e2",
+    "hr_id": "18733d89-ddba-4648-8020-b702b3b0aa40",
+    "name": "Sai Santhoshi ",
+    "email": "saisanthoshig.10@gmail.com",
+    "role": "AI Engineer ",
+    "joining_date": "Sat, 31 Jan 2026 00:00:00 GMT",
+    "salary": "100000",
+    "employment_type": "full_time",
+    "pattern": "classic",
+    "custom_text": "",
+    "offer_status": "pending",
+    "sent_at": "2026-06-04 16:56:15.724849",
+    "extra": {
+      "Status": "Selected "
+    }
   }
 }
