@@ -1,288 +1,699 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Background Verification — OfferFlow</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--navy:#0d1b3e;--blue:#1a56db;--teal:#0ea5e9;--green:#10b981;--red:#ef4444;--amber:#f97316;--bg:#f0f4fa;--border:#e2e8f0;--text:#1e293b;--muted:#64748b}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.page-wrap{max-width:700px;margin:0 auto;padding:40px 20px 80px}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-.page-header{text-align:center;margin-bottom:40px}
-.page-header .logo{font-family:'DM Serif Display',serif;font-size:1.8rem;color:var(--navy);margin-bottom:4px}
-.page-header p{color:var(--muted);font-size:.9rem}
-.page-header .cand-badge{display:inline-flex;align-items:center;gap:8px;background:#dbeafe;color:#1e40af;padding:6px 16px;border-radius:20px;font-size:.85rem;font-weight:600;margin-top:12px}
+  :root {
+    --navy:    #0d1b3e;
+    --blue:    #1a56db;
+    --blue-l:  #3b82f6;
+    --teal:    #0ea5e9;
+    --green:   #10b981;
+    --amber:   #f59e0b;
+    --red:     #ef4444;
+    --surface: #ffffff;
+    --bg:      #f4f6fb;
+    --border:  #e5e9f2;
+    --text:    #1e2a45;
+    --muted:   #8492a6;
+  }
 
-/* Stepper */
-.stepper{display:flex;align-items:center;margin-bottom:32px;background:#fff;border-radius:12px;padding:20px 24px;border:1px solid var(--border)}
-.step-dot{display:flex;align-items:center;gap:8px;flex:1}
-.dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0;transition:all .3s}
-.dot.done{background:var(--green);color:#fff}
-.dot.active{background:var(--blue);color:#fff;box-shadow:0 0 0 4px rgba(26,86,219,.2)}
-.dot.inactive{background:var(--border);color:var(--muted)}
-.step-lbl{font-size:.78rem;font-weight:600}
-.step-lbl.active{color:var(--blue)}.step-lbl.done{color:var(--green)}.step-lbl.inactive{color:var(--muted)}
-.step-bar{flex:1;height:2px;background:var(--border);margin:0 6px;transition:background .3s}
-.step-bar.done{background:var(--green)}
+  html { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-/* Cards */
-.form-card{background:#fff;border-radius:14px;border:1px solid var(--border);padding:32px;display:none}
-.form-card.active{display:block}
-.form-card-title{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--navy);margin-bottom:4px}
-.form-card-sub{color:var(--muted);font-size:.85rem;margin-bottom:28px}
+  /* ── Top bar ── */
+  .topbar {
+    background: var(--navy);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(13,27,62,.35);
+  }
+  .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.35rem;
+    color: #fff;
+    letter-spacing: .01em;
+  }
+  .topbar-brand-icon {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, var(--teal), var(--blue-l));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem;
+  }
+  .topbar-badge {
+    font-size: .72rem;
+    background: rgba(255,255,255,.12);
+    color: rgba(255,255,255,.7);
+    border: 1px solid rgba(255,255,255,.18);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    letter-spacing: .03em;
+  }
 
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:500px){.form-grid{grid-template-columns:1fr}}
-.form-group{margin-bottom:0}
-.form-group.full{grid-column:1/-1}
-label{display:block;font-weight:600;font-size:.8rem;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
-label .req{color:var(--red)}
-.form-control{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;background:#fff}
-.form-control:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.1)}
-.form-control.error{border-color:var(--red)}
+  /* ── Hero strip ── */
+  .hero {
+    background: linear-gradient(135deg, var(--navy) 0%, #1e3a7a 60%, #1a56db 100%);
+    padding: 48px 32px 60px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 100%, rgba(26,86,219,.35), transparent);
+  }
+  .hero-eyebrow {
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.55);
+    margin-bottom: 10px;
+  }
+  .hero h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 2rem;
+    color: #fff;
+    font-weight: 400;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .hero-sub {
+    font-size: .9rem;
+    color: rgba(255,255,255,.6);
+    position: relative;
+    max-width: 420px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
 
-/* Radio group */
-.radio-group{display:flex;gap:16px;margin:8px 0}
-.radio-opt{flex:1;border:2px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;text-align:center;transition:all .2s}
-.radio-opt:hover{border-color:var(--blue)}.radio-opt.selected{border-color:var(--blue);background:#f0f4ff}
-.radio-opt input{display:none}
-.radio-opt i{font-size:1.4rem;margin-bottom:8px;display:block}
-.radio-opt span{font-weight:600;font-size:.85rem;color:var(--navy)}
+  /* ── Progress stepper ── */
+  .stepper-wrap {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    position: sticky;
+    top: 60px;
+    z-index: 90;
+    box-shadow: 0 2px 12px rgba(0,0,0,.04);
+  }
+  .stepper {
+    display: flex;
+    align-items: stretch;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 8px;
+    position: relative;
+    cursor: default;
+  }
+  .step + .step::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 28px;
+    width: 100%; height: 2px;
+    background: var(--border);
+    z-index: 0;
+    transform: translateX(-50%);
+  }
+  .step.done + .step::before { background: var(--green); }
+  .step-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem; font-weight: 700;
+    position: relative; z-index: 1;
+    transition: all .3s ease;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+  }
+  .step.active .step-dot {
+    background: var(--blue); border-color: var(--blue);
+    color: #fff;
+    box-shadow: 0 0 0 5px rgba(26,86,219,.15);
+  }
+  .step.done .step-dot {
+    background: var(--green); border-color: var(--green);
+    color: #fff;
+  }
+  .step-name {
+    font-size: .72rem; font-weight: 600;
+    color: var(--muted); margin-top: 6px;
+    text-align: center; white-space: nowrap;
+    transition: color .2s;
+  }
+  .step.active .step-name { color: var(--blue); }
+  .step.done  .step-name  { color: var(--green); }
 
-/* File upload */
-.file-zone{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;background:#fafbff}
-.file-zone:hover{border-color:var(--blue);background:#f0f4ff}
-.file-zone i{font-size:1.6rem;color:var(--muted);margin-bottom:8px;display:block}
-.file-zone p{font-size:.85rem;color:var(--muted)}
-.file-badge{display:inline-flex;align-items:center;gap:8px;background:#d1fae5;color:#065f46;padding:6px 12px;border-radius:6px;font-size:.8rem;font-weight:600;margin-top:8px}
+  /* ── Main card area ── */
+  .main { max-width: 660px; margin: 0 auto; padding: 36px 20px 60px; }
 
-/* Buttons */
-.btn-row{display:flex;gap:12px;margin-top:28px;justify-content:flex-end}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;border-radius:8px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.9rem;transition:all .2s}
-.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1248c0}
-.btn-ghost{background:transparent;color:var(--blue);border:2px solid var(--blue)}.btn-ghost:hover{background:var(--blue);color:#fff}
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px 40px;
+    box-shadow: 0 4px 28px rgba(13,27,62,.06);
+    animation: fadeUp .4s ease backwards;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
-/* Progress bar */
-.progress-bar-wrap{background:var(--border);border-radius:4px;height:6px;margin-bottom:8px}
-.progress-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),var(--teal));transition:width .4s ease}
+  .card-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.45rem;
+    color: var(--navy);
+    margin-bottom: 4px;
+    font-weight: 400;
+  }
+  .card-sub {
+    font-size: .84rem;
+    color: var(--muted);
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
 
-#toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-weight:600;font-size:.9rem;display:none;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+  /* ── Form elements ── */
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+  .field-row.single { grid-template-columns: 1fr; }
+  .field-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+  }
+  .field label span.req { color: var(--red); margin-left: 2px; }
+
+  .field input, .field select {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: .9rem;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+    width: 100%;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(26,86,219,.1);
+  }
+  .field input::placeholder { color: #b0bad0; }
+
+  /* ── Section divider ── */
+  .section-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 28px 0 22px;
+  }
+  .section-divider span {
+    font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); white-space: nowrap;
+  }
+  .section-divider::before, .section-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── Candidate type toggle ── */
+  .type-toggle {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin-bottom: 24px;
+  }
+  .type-opt {
+    border: 2px solid var(--border);
+    border-radius: 14px; padding: 20px 16px;
+    cursor: pointer; text-align: center;
+    transition: all .25s ease;
+    background: var(--bg);
+    position: relative; overflow: hidden;
+  }
+  .type-opt::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--blue); opacity: 0;
+    transition: opacity .2s;
+  }
+  .type-opt:hover { border-color: #c8d4f0; background: #f7f9ff; transform: translateY(-2px); }
+  .type-opt.selected { border-color: var(--blue); background: #f0f4ff; }
+  .type-opt.selected::after { opacity: 1; }
+  .type-opt-icon { font-size: 1.6rem; margin-bottom: 8px; display: block; }
+  .type-opt-label { font-size: .88rem; font-weight: 700; color: var(--navy); }
+  .type-opt-sub { font-size: .75rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+
+  /* ── Info notice ── */
+  .info-notice {
+    background: #f0f7ff; border: 1px solid #bfdbfe;
+    border-radius: 10px; padding: 13px 16px;
+    font-size: .82rem; color: #1e40af;
+    display: flex; gap: 10px; align-items: flex-start;
+    margin-bottom: 24px; line-height: 1.6;
+  }
+  .info-notice svg { flex-shrink: 0; margin-top: 1px; }
+
+  /* ── Submit button ── */
+  .btn-primary {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--navy), var(--blue));
+    color: #fff; border: none; border-radius: 12px;
+    font-size: .95rem; font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer; letter-spacing: .01em;
+    transition: all .25s ease;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-top: 28px;
+    box-shadow: 0 4px 18px rgba(26,86,219,.3);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(26,86,219,.4);
+  }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+  /* ── Success screen ── */
+  .success-card {
+    text-align: center;
+    padding: 52px 40px;
+  }
+  .success-icon {
+    width: 76px; height: 76px;
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; margin: 0 auto 22px;
+    box-shadow: 0 8px 28px rgba(16,185,129,.2);
+    animation: bounceIn .5s cubic-bezier(.34,1.56,.64,1) backwards;
+  }
+  @keyframes bounceIn {
+    from { transform: scale(0); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .success-card h2 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.7rem; color: var(--navy);
+    margin-bottom: 8px; font-weight: 400;
+  }
+  .success-card p { font-size: .9rem; color: var(--muted); line-height: 1.7; max-width: 380px; margin: 0 auto; }
+
+  /* ── Hidden panels ── */
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeUp .35s ease backwards; }
+
+  /* ── Experienced fields ── */
+  #expFields { animation: fadeUp .3s ease backwards; }
+
+  /* ── Progress bar inside button ── */
+  .spinner {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .card { padding: 28px 22px; }
+    .field-row { grid-template-columns: 1fr; }
+    .field-row.triple { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 1.6rem; }
+  }
 </style>
 </head>
 <body>
-<div class="page-wrap">
-  <div class="page-header">
-    <div class="logo"><i class="fas fa-shield-alt" style="color:var(--blue)"></i> Background Verification</div>
-    <p>Please complete all steps to proceed with your onboarding</p>
-    <div class="cand-badge"><i class="fas fa-user"></i> {{ candidate.name }}</div>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-brand-icon">📋</div>
+    OfferFlow
   </div>
+  <div class="topbar-badge">Background Verification</div>
+</div>
 
-  <!-- Progress -->
-  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill" style="width:33%"></div></div>
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-eyebrow">Secure Onboarding Process</div>
+  <h1>Background Verification</h1>
+  <p class="hero-sub">Complete the 3-step form below. Your information is encrypted and used solely for verification purposes.</p>
+</div>
 
-  <!-- Stepper -->
+<!-- Stepper -->
+<div class="stepper-wrap">
   <div class="stepper">
-    <div class="step-dot"><div class="dot active" id="d1">1</div><div class="step-lbl active" id="l1">Personal Info</div></div>
-    <div class="step-bar" id="b1"></div>
-    <div class="step-dot"><div class="dot inactive" id="d2">2</div><div class="step-lbl inactive" id="l2">Education</div></div>
-    <div class="step-bar" id="b2"></div>
-    <div class="step-dot"><div class="dot inactive" id="d3">3</div><div class="step-lbl inactive" id="l3">Documents & Work</div></div>
-  </div>
-
-  <!-- Step 1: Personal Info -->
-  <div class="form-card active" id="step1Card">
-    <div class="form-card-title">Step 1: Personal Information</div>
-    <div class="form-card-sub">All fields are mandatory</div>
-    <div class="form-grid">
-      <div class="form-group"><label>First Name <span class="req">*</span></label><input class="form-control" id="firstName" placeholder="First name" value="{{ candidate.name.split(' ')[0] if candidate.name else '' }}"></div>
-      <div class="form-group"><label>Last Name <span class="req">*</span></label><input class="form-control" id="lastName" placeholder="Last name" value="{{ candidate.name.split(' ')[-1] if candidate.name and ' ' in candidate.name else '' }}"></div>
-      <div class="form-group full"><label>Email Address <span class="req">*</span></label><input class="form-control" id="email1" type="email" placeholder="Email" value="{{ candidate.email }}"></div>
-      <div class="form-group"><label>Phone Number <span class="req">*</span></label><input class="form-control" id="phone" type="tel" placeholder="+91 XXXXX XXXXX"></div>
-      <div class="form-group"><label>Aadhaar Number <span class="req">*</span></label><input class="form-control" id="aadhaar" placeholder="XXXX XXXX XXXX" maxlength="14"></div>
-      <div class="form-group"><label>PAN Card Number <span class="req">*</span></label><input class="form-control" id="pan" placeholder="AAAAA0000A" maxlength="10"></div>
+    <div class="step active" id="stepper-1">
+      <div class="step-dot" id="dot-1">1</div>
+      <div class="step-name">Personal Info</div>
     </div>
-    <div class="btn-row"><button class="btn btn-primary" onclick="submitStep1()">Next: Education <i class="fas fa-arrow-right"></i></button></div>
-  </div>
-
-  <!-- Step 2: Education -->
-  <div class="form-card" id="step2Card">
-    <div class="form-card-title">Step 2: Education Details</div>
-    <div class="form-card-sub">Provide your highest qualification details</div>
-    <div class="form-grid">
-      <div class="form-group full"><label>College / University Name <span class="req">*</span></label><input class="form-control" id="college" placeholder="e.g. IIT Hyderabad"></div>
-      <div class="form-group"><label>Specialization / Branch <span class="req">*</span></label><input class="form-control" id="spec" placeholder="e.g. Computer Science"></div>
-      <div class="form-group"><label>Percentage / CGPA <span class="req">*</span></label><input class="form-control" id="percentage" placeholder="e.g. 85% or 8.5 CGPA"></div>
+    <div class="step" id="stepper-2">
+      <div class="step-dot" id="dot-2">2</div>
+      <div class="step-name">Education</div>
     </div>
-    <div class="btn-row">
-      <button class="btn btn-ghost" onclick="goStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
-      <button class="btn btn-primary" onclick="submitStep2()">Next: Documents <i class="fas fa-arrow-right"></i></button>
-    </div>
-  </div>
-
-  <!-- Step 3: Documents & Work -->
-  <div class="form-card" id="step3Card">
-    <div class="form-card-title">Step 3: Documents & Work Details</div>
-    <div class="form-card-sub">Upload required documents and provide work history</div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px">
-      <div>
-        <label>Aadhaar Card <span class="req">*</span></label>
-        <div class="file-zone" onclick="triggerFile('aadhaarFile')"><i class="fas fa-id-card"></i><p>Click to upload</p></div>
-        <input type="file" id="aadhaarFile" style="display:none" accept=".pdf,.jpg,.png" onchange="showFile(this,'aadhaarLabel')">
-        <div id="aadhaarLabel"></div>
-      </div>
-      <div>
-        <label>Passport Photo <span class="req">*</span></label>
-        <div class="file-zone" onclick="triggerFile('photoFile')"><i class="fas fa-camera"></i><p>Click to upload</p></div>
-        <input type="file" id="photoFile" style="display:none" accept=".jpg,.png" onchange="showFile(this,'photoLabel')">
-        <div id="photoLabel"></div>
-      </div>
-      <div>
-        <label>Memos / Marksheets <span class="req">*</span></label>
-        <div class="file-zone" onclick="triggerFile('memosFile')"><i class="fas fa-file-alt"></i><p>Click to upload</p></div>
-        <input type="file" id="memosFile" style="display:none" accept=".pdf,.jpg,.png" multiple onchange="showFile(this,'memosLabel')">
-        <div id="memosLabel"></div>
-      </div>
-    </div>
-
-    <div style="margin-bottom:20px">
-      <label>Are you a Fresher or Experienced? <span class="req">*</span></label>
-      <div class="radio-group">
-        <label class="radio-opt selected" id="fresherOpt" onclick="selectType('fresher')">
-          <input type="radio" name="candType" value="fresher">
-          <i class="fas fa-graduation-cap" style="color:var(--teal)"></i>
-          <span>Fresher</span>
-        </label>
-        <label class="radio-opt" id="expOpt" onclick="selectType('experienced')">
-          <input type="radio" name="candType" value="experienced">
-          <i class="fas fa-briefcase" style="color:var(--amber)"></i>
-          <span>Experienced</span>
-        </label>
-      </div>
-    </div>
-
-    <!-- Experienced fields -->
-    <div id="expFields" style="display:none;border-top:1px solid var(--border);padding-top:20px;margin-top:4px">
-      <p style="font-weight:600;font-size:.9rem;color:var(--navy);margin-bottom:16px"><i class="fas fa-briefcase" style="color:var(--amber)"></i> Previous Employment Details</p>
-      <div class="form-grid">
-        <div class="form-group"><label>Previous Company <span class="req">*</span></label><input class="form-control" id="prevCompany" placeholder="Company name"></div>
-        <div class="form-group"><label>Role / Designation <span class="req">*</span></label><input class="form-control" id="prevRole" placeholder="Your role"></div>
-        <div class="form-group"><label>Company Email <span class="req">*</span></label><input class="form-control" id="companyEmail" type="email" placeholder="hr@company.com"></div>
-        <div class="form-group"><label>Duration <span class="req">*</span></label><input class="form-control" id="duration" placeholder="e.g. 2 years 3 months"></div>
-      </div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn btn-ghost" onclick="goStep(2)"><i class="fas fa-arrow-left"></i> Back</button>
-      <button class="btn btn-primary" id="submitFinalBtn" onclick="submitStep3()"><i class="fas fa-paper-plane"></i> Submit Verification</button>
+    <div class="step" id="stepper-3">
+      <div class="step-dot" id="dot-3">3</div>
+      <div class="step-name">Employment</div>
     </div>
   </div>
 </div>
 
-<div id="toast"></div>
+<!-- Main -->
+<div class="main">
+
+  <!-- ── Step 1: Personal Info ── -->
+  <div class="card panel active" id="panel-1">
+    <div class="card-title">Personal Information</div>
+    <div class="card-sub">Your basic details for identity verification</div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>First Name <span class="req">*</span></label>
+        <input type="text" id="firstName" placeholder="Arjun" autocomplete="given-name">
+      </div>
+      <div class="field">
+        <label>Last Name <span class="req">*</span></label>
+        <input type="text" id="lastName" placeholder="Sharma" autocomplete="family-name">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Phone Number <span class="req">*</span></label>
+        <input type="tel" id="phone" placeholder="+91 98765 43210" autocomplete="tel">
+      </div>
+      <div class="field">
+        <label>Aadhaar Number <span class="req">*</span></label>
+        <input type="text" id="aadhaar" placeholder="XXXX XXXX XXXX" maxlength="14">
+      </div>
+    </div>
+
+    <div class="field-row single">
+      <div class="field">
+        <label>PAN Number <span class="req">*</span></label>
+        <input type="text" id="pan" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase">
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="submitStep(1)">
+      Continue to Education
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+
+  <!-- ── Step 2: Education ── -->
+  <div class="card panel" id="panel-2">
+    <div class="card-title">Educational Background</div>
+    <div class="card-sub">Your highest qualification details</div>
+
+    <div class="field-row single">
+      <div class="field">
+        <label>College / University <span class="req">*</span></label>
+        <input type="text" id="college" placeholder="Indian Institute of Technology, Delhi" autocomplete="organization">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Specialization / Branch <span class="req">*</span></label>
+        <input type="text" id="specialization" placeholder="Computer Science & Engineering">
+      </div>
+      <div class="field">
+        <label>Percentage / CGPA <span class="req">*</span></label>
+        <input type="text" id="percentage" placeholder="8.7 CGPA / 87%">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:28px">
+      <button class="btn-primary" style="background:var(--bg);color:var(--navy);box-shadow:none;border:1.5px solid var(--border);flex:0 0 auto;width:auto;padding:14px 22px" onclick="goPanel(1)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back
+      </button>
+      <button class="btn-primary" onclick="submitStep(2)" style="flex:1">
+        Continue to Employment
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Step 3: Employment ── -->
+  <div class="card panel" id="panel-3">
+    <div class="card-title">Employment History</div>
+    <div class="card-sub">Tell us about your work experience</div>
+
+    <div class="type-toggle">
+      <div class="type-opt selected" id="opt-fresher" onclick="selectType('fresher')">
+        <span class="type-opt-icon">🎓</span>
+        <div class="type-opt-label">Fresh Graduate</div>
+        <div class="type-opt-sub">No prior work experience</div>
+      </div>
+      <div class="type-opt" id="opt-experienced" onclick="selectType('experienced')">
+        <span class="type-opt-icon">💼</span>
+        <div class="type-opt-label">Experienced</div>
+        <div class="type-opt-sub">Have previous employment</div>
+      </div>
+    </div>
+
+    <!-- Fresher notice -->
+    <div id="fresherNotice" class="info-notice">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+      </svg>
+      <div>As a fresh graduate, no employment verification is required. Submitting this form will complete your background check.</div>
+    </div>
+
+    <!-- Experienced fields -->
+    <div id="expFields" style="display:none">
+      <div class="section-divider"><span>Previous Employer Details</span></div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Previous Company <span class="req">*</span></label>
+          <input type="text" id="prevCompany" placeholder="Infosys Limited">
+        </div>
+        <div class="field">
+          <label>Your Role / Designation <span class="req">*</span></label>
+          <input type="text" id="prevRole" placeholder="Software Engineer">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Official HR Email <span class="req">*</span></label>
+          <input type="email" id="companyEmail" placeholder="hr@infosys.com">
+        </div>
+        <div class="field">
+          <label>Duration <span class="req">*</span></label>
+          <input type="text" id="duration" placeholder="2 years 4 months">
+        </div>
+      </div>
+
+      <div class="info-notice" style="margin-top:4px">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+        </svg>
+        <div>A verification request will be sent to the HR email above. Your offer is contingent on a positive response.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:28px">
+      <button class="btn-primary" style="background:var(--bg);color:var(--navy);box-shadow:none;border:1.5px solid var(--border);flex:0 0 auto;width:auto;padding:14px 22px" onclick="goPanel(2)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back
+      </button>
+      <button class="btn-primary" id="finalBtn" onclick="submitStep(3)" style="flex:1">
+        Submit Verification
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Success screen ── -->
+  <div class="card panel" id="panel-success">
+    <div class="success-card">
+      <div class="success-icon">✅</div>
+      <h2 id="successTitle">Verification Submitted!</h2>
+      <p id="successMsg">Your information has been submitted successfully. You will receive a confirmation email shortly.</p>
+    </div>
+  </div>
+
+</div><!-- /main -->
 
 <script>
-const VID="{{ verification_id }}";
-let candType='fresher';
-let currentStep=1;
+  // Injected by Flask
+  const VID  = "{{ verification.id }}";
+  const VNAME = "{{ verification.name | default('') }}";
 
-function goStep(n){
-  currentStep=n;
-  [1,2,3].forEach(i=>{
-    document.getElementById('step'+i+'Card').classList.toggle('active',i===n);
-    const d=document.getElementById('d'+i);
-    const l=document.getElementById('l'+i);
-    if(i<n){d.className='dot done';d.innerHTML='<i class="fas fa-check"></i>';l.className='step-lbl done';document.getElementById('b'+i)?.classList.add('done')}
-    else if(i===n){d.className='dot active';d.textContent=i;l.className='step-lbl active'}
-    else{d.className='dot inactive';d.textContent=i;l.className='step-lbl inactive';document.getElementById('b'+i)?.classList.remove('done')}
-  });
-  document.getElementById('progressFill').style.width=(n/3*100)+'%';
-  window.scrollTo({top:0,behavior:'smooth'});
-}
+  let candType = 'fresher';
 
-function triggerFile(id){document.getElementById(id).click()}
-function showFile(inp,labelId){
-  const el=document.getElementById(labelId);
-  if(inp.files.length>0){
-    el.innerHTML=`<div class="file-badge"><i class="fas fa-check"></i>${Array.from(inp.files).map(f=>f.name).join(', ')}</div>`;
+  /* ── Panel navigation ── */
+  function goPanel(n) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + n).classList.add('active');
+
+    // Update stepper
+    [1, 2, 3].forEach(i => {
+      const s = document.getElementById('stepper-' + i);
+      const d = document.getElementById('dot-' + i);
+      s.className = 'step';
+      d.innerHTML = i;
+      if (i < n)       { s.classList.add('done');   d.innerHTML = '✓'; }
+      else if (i === n){ s.classList.add('active'); }
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-}
 
-function selectType(t){
-  candType=t;
-  document.getElementById('fresherOpt').classList.toggle('selected',t==='fresher');
-  document.getElementById('expOpt').classList.toggle('selected',t==='experienced');
-  document.getElementById('expFields').style.display=t==='experienced'?'block':'none';
-}
-
-function toast(msg,ok=true){
-  const el=document.getElementById('toast');
-  el.style.background=ok?'#10b981':'#ef4444';
-  el.textContent=msg;el.style.display='block';
-  setTimeout(()=>el.style.display='none',3500);
-}
-
-async function submitStep(step, data){
-  const fd=new FormData();
-  fd.append('verification_id',VID);fd.append('step',step);
-  Object.entries(data).forEach(([k,v])=>fd.append(k,v));
-  const r=await fetch('/api/submit-verification',{method:'POST',body:fd});
-  return r.json();
-}
-
-async function submitStep1(){
-  const vals={first_name:document.getElementById('firstName').value.trim(),
-    last_name:document.getElementById('lastName').value.trim(),
-    email:document.getElementById('email1').value.trim(),
-    phone:document.getElementById('phone').value.trim(),
-    aadhaar:document.getElementById('aadhaar').value.trim(),
-    pan:document.getElementById('pan').value.trim()};
-  if(Object.values(vals).some(v=>!v)){toast('All fields are required','error');return}
-  const d=await submitStep('1',vals);
-  if(d.success){goStep(2)}else toast(d.message||'Error','error');
-}
-
-async function submitStep2(){
-  const vals={college:document.getElementById('college').value.trim(),
-    specialization:document.getElementById('spec').value.trim(),
-    percentage:document.getElementById('percentage').value.trim()};
-  if(Object.values(vals).some(v=>!v)){toast('All fields are required','error');return}
-  const d=await submitStep('2',vals);
-  if(d.success){goStep(3)}else toast(d.message||'Error','error');
-}
-
-async function submitStep3(){
-  if(!document.getElementById('aadhaarFile').files.length||
-     !document.getElementById('photoFile').files.length||
-     !document.getElementById('memosFile').files.length){
-    toast('Please upload all required documents','error');return;
+  /* ── Candidate type toggle ── */
+  function selectType(type) {
+    candType = type;
+    document.getElementById('opt-fresher').classList.toggle('selected', type === 'fresher');
+    document.getElementById('opt-experienced').classList.toggle('selected', type === 'experienced');
+    document.getElementById('fresherNotice').style.display = type === 'fresher' ? 'flex' : 'none';
+    document.getElementById('expFields').style.display     = type === 'experienced' ? 'block' : 'none';
+    document.getElementById('finalBtn').innerHTML =
+      type === 'fresher'
+        ? 'Complete Verification <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>'
+        : 'Submit & Send Verification Email <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
   }
-  if(candType==='experienced'){
-    const expFields=['prevCompany','prevRole','companyEmail','duration'];
-    if(expFields.some(id=>!document.getElementById(id).value.trim())){
-      toast('Please fill all employment details','error');return;
+
+  /* ── Validation helpers ── */
+  function val(id) { return (document.getElementById(id)?.value || '').trim(); }
+  function req(id, msg) {
+    if (!val(id)) { alert(msg); document.getElementById(id)?.focus(); return false; }
+    return true;
+  }
+
+  /* ── Step submissions ── */
+  async function submitStep(step) {
+    const fd = new FormData();
+    fd.append('verification_id', VID);
+    fd.append('step', String(step));
+
+    if (step === 1) {
+      if (!req('firstName','Please enter your first name')) return;
+      if (!req('lastName', 'Please enter your last name'))  return;
+      if (!req('phone',    'Please enter your phone number')) return;
+      if (!req('aadhaar',  'Please enter your Aadhaar number')) return;
+      if (!req('pan',      'Please enter your PAN number')) return;
+      fd.append('first_name', val('firstName'));
+      fd.append('last_name',  val('lastName'));
+      fd.append('phone',      val('phone'));
+      fd.append('aadhaar',    val('aadhaar'));
+      fd.append('pan',        val('pan').toUpperCase());
+    }
+
+    if (step === 2) {
+      if (!req('college',        'Please enter your college/university')) return;
+      if (!req('specialization', 'Please enter your specialization'))     return;
+      if (!req('percentage',     'Please enter your percentage/CGPA'))    return;
+      fd.append('college',        val('college'));
+      fd.append('specialization', val('specialization'));
+      fd.append('percentage',     val('percentage'));
+    }
+
+    if (step === 3) {
+      fd.append('candidate_type', candType);
+      if (candType === 'experienced') {
+        if (!req('prevCompany',  'Please enter your previous company'))   return;
+        if (!req('prevRole',     'Please enter your previous role'))      return;
+        if (!req('companyEmail', 'Please enter the official HR email'))   return;
+        if (!req('duration',     'Please enter your duration of service')) return;
+        const em = val('companyEmail');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
+          alert('Please enter a valid HR email address'); return;
+        }
+        fd.append('prev_company',    val('prevCompany'));
+        fd.append('prev_role',       val('prevRole'));
+        fd.append('company_email',   em);
+        fd.append('duration',        val('duration'));
+      }
+    }
+
+    // Disable button, show spinner
+    const btns = document.querySelectorAll('.btn-primary');
+    btns.forEach(b => b.disabled = true);
+    const submitBtn = step === 3
+      ? document.getElementById('finalBtn')
+      : document.querySelectorAll('#panel-' + step + ' .btn-primary')[document.querySelectorAll('#panel-' + step + ' .btn-primary').length - 1];
+
+    const origHTML = submitBtn?.innerHTML || '';
+    if (submitBtn) submitBtn.innerHTML = '<span class="spinner"></span> Saving…';
+
+    try {
+      const res  = await fetch('/api/submit-verification', { method: 'POST', body: fd });
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || 'Something went wrong. Please try again.');
+        btns.forEach(b => b.disabled = false);
+        if (submitBtn) submitBtn.innerHTML = origHTML;
+        return;
+      }
+
+      if (step < 3) {
+        goPanel(step + 1);
+        btns.forEach(b => b.disabled = false);
+        if (submitBtn) submitBtn.innerHTML = origHTML;
+      } else {
+        // Show success
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.step').forEach(s => {
+          s.classList.remove('active'); s.classList.add('done');
+        });
+        document.querySelectorAll('.step-dot').forEach(d => d.innerHTML = '✓');
+
+        const panel = document.getElementById('panel-success');
+        panel.classList.add('active');
+
+        if (candType === 'experienced') {
+          document.getElementById('successTitle').textContent = 'Verification Request Sent!';
+          document.getElementById('successMsg').textContent =
+            'We have sent an employment verification request to your previous employer\'s HR team. Once confirmed, your onboarding will proceed. Check your email for updates.';
+        } else {
+          document.getElementById('successTitle').textContent = 'Verification Complete!';
+          document.getElementById('successMsg').textContent =
+            'Your background verification is complete. Welcome aboard! HR will be in touch with your onboarding schedule shortly.';
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (err) {
+      alert('Network error. Please check your connection and try again.');
+      btns.forEach(b => b.disabled = false);
+      if (submitBtn) submitBtn.innerHTML = origHTML;
     }
   }
-  const vals={candidate_type:candType};
-  if(candType==='experienced'){
-    vals.prev_company=document.getElementById('prevCompany').value.trim();
-    vals.prev_role=document.getElementById('prevRole').value.trim();
-    vals.company_email=document.getElementById('companyEmail').value.trim();
-    vals.duration=document.getElementById('duration').value.trim();
-  }
-  const d=await submitStep('3',vals);
-  if(d.success){
-    document.querySelector('.page-wrap').innerHTML=`
-      <div style="text-align:center;padding:80px 20px">
-        <div style="width:80px;height:80px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:2rem">✅</div>
-        <h2 style="font-family:'DM Serif Display',serif;font-size:2rem;color:#065f46;margin-bottom:12px">${candType==='fresher'?'Verification Complete!':'Verification Submitted!'}</h2>
-        <p style="color:#64748b;max-width:400px;margin:auto">${candType==='fresher'?'Your background has been verified. We will reach out soon with next steps.':'We have sent a verification request to your previous employer. We will update you once confirmed.'}</p>
-      </div>`;
-  }else toast(d.message||'Error','error');
-}
 </script>
 </body>
 </html>
