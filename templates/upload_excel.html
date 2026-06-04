@@ -1,633 +1,1282 @@
-{% extends 'base.html' %}
-{% block title %}Upload & Preview — OfferFlow{% endblock %}
-{% block head %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload & Send Offers — OfferFlow</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-/* ── Layout ──────────────────────────────────────────────────────────────── */
-.upload-layout{display:flex;min-height:100vh;background:var(--bg)}
-.upload-sidebar{width:var(--sidebar-w,240px);background:var(--navy);flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:width var(--dur-normal) var(--ease-smooth)}
-.upload-sidebar-head{padding:24px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
-.sidebar-logo{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:1.3rem;color:#fff}
-.sidebar-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--teal),var(--blue-l));border-radius:8px;display:flex;align-items:center;justify-content:center;transition:transform var(--dur-normal) var(--ease-spring)}
-.sidebar-logo-icon:hover{transform:rotate(5deg) scale(1.05)}
-.back-link{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.6);padding:16px 20px;font-size:.85rem;cursor:pointer;transition:all var(--dur-fast) var(--ease-smooth);text-decoration:none}
-.back-link:hover{color:#fff;background:rgba(255,255,255,.07)}
-.cand-list{flex:1;overflow-y:auto;padding:8px 0}
-.cand-item{padding:12px 20px;cursor:pointer;border-left:3px solid transparent;transition:all var(--dur-fast) var(--ease-smooth);color:rgba(255,255,255,.7)}
-.cand-item:hover,.cand-item.active{background:rgba(255,255,255,.07);color:#fff;border-left-color:var(--teal)}
-.cand-item-name{font-weight:600;font-size:.85rem}
-.cand-item-role{font-size:.75rem;color:rgba(255,255,255,.4);margin-top:2px}
+/* ─── Reset & Base ────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:     #0b1630;
+  --navy-2:   #132045;
+  --navy-3:   #1c2f5e;
+  --blue:     #2563eb;
+  --blue-l:   #3b82f6;
+  --blue-glow:rgba(37,99,235,.18);
+  --teal:     #06b6d4;
+  --green:    #10b981;
+  --green-l:  #34d399;
+  --amber:    #f59e0b;
+  --red:      #ef4444;
+  --gold:     #d97706;
+  --surface:  #ffffff;
+  --surface-2:#f8faff;
+  --bg:       #f1f4fb;
+  --border:   #e3e8f4;
+  --text:     #1a2540;
+  --muted:    #7a8aaa;
+  --sidebar-w:260px;
+  --topbar-h: 62px;
+  --ease:     cubic-bezier(.4,0,.2,1);
+  --spring:   cubic-bezier(.34,1.56,.64,1);
+}
+html{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{text-decoration:none;color:inherit}
+button{font-family:'Sora',sans-serif;cursor:pointer;border:none;background:none}
 
-.upload-main{flex:1;overflow-y:auto}
-.topbar2{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
-.topbar2 h1{font-family:var(--font-display);font-size:1.4rem;color:var(--navy)}
+/* ─── Layout shell ────────────────────────────────────────────────── */
+.app{display:flex;min-height:100vh}
 
-/* ── Stepper ─────────────────────────────────────────────────────────────── */
-.stepper{display:flex;align-items:center;padding:20px 32px;background:var(--surface);border-bottom:1px solid var(--border);gap:0;overflow-x:auto}
-.step-item{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
-.step-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;transition:all var(--dur-normal) var(--ease-spring)}
-.step-circle.done{background:var(--green);color:#fff;transform:scale(1.1)}
-.step-circle.active{background:var(--blue);color:#fff;box-shadow:0 0 0 4px var(--blue-glow);animation:pulse 2s infinite}
-.step-circle.inactive{background:var(--border);color:var(--muted)}
-.step-label{font-size:.82rem;font-weight:600;color:var(--muted);white-space:nowrap;transition:color var(--dur-fast) var(--ease-smooth}
-.step-label.active{color:var(--blue)}.step-label.done{color:var(--green)}
-.step-line{flex:1;height:2px;background:var(--border);margin:0 8px;min-width:16px;transition:all var(--dur-normal) var(--ease-smooth);position:relative;overflow:hidden}
-.step-line.done{background:var(--green)}
-.step-line.done::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(16,185,129,0.5),transparent);animation:shimmer 2s infinite linear}
+/* ─── Sidebar ─────────────────────────────────────────────────────── */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  background:var(--navy);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;bottom:0;
+  z-index:200;
+  box-shadow:4px 0 32px rgba(0,0,0,.28);
+  transition:transform .3s var(--ease);
+}
+.sidebar-head{
+  padding:22px 20px 18px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  display:flex;align-items:center;gap:11px;
+}
+.brand-icon{
+  width:38px;height:38px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--teal),var(--blue-l));
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;color:#fff;
+  box-shadow:0 4px 14px rgba(6,182,212,.35);
+  transition:transform .25s var(--spring);
+}
+.brand-icon:hover{transform:rotate(6deg) scale(1.08)}
+.brand-name{
+  font-family:'Instrument Serif',serif;
+  font-size:1.35rem;color:#fff;
+  letter-spacing:.01em;line-height:1
+}
+.brand-tag{
+  font-size:.6rem;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(255,255,255,.35);margin-top:2px
+}
 
-/* ── Step content ────────────────────────────────────────────────────────── */
-.step-content{padding:32px}
-.step-panel{display:none}.step-panel.active{display:block;animation:fadeSlideUp var(--dur-normal) var(--ease-spring) backwards}
+.sidebar-nav{padding:16px 12px;flex:1;overflow-y:auto}
+.nav-label{
+  font-size:.62rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(255,255,255,.28);
+  padding:0 10px;margin:14px 0 7px
+}
+.nav-link{
+  display:flex;align-items:center;gap:11px;
+  padding:10px 12px;border-radius:10px;
+  color:rgba(255,255,255,.55);font-size:.82rem;font-weight:500;
+  transition:all .2s var(--ease);margin-bottom:2px;
+}
+.nav-link:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-link.active{background:rgba(37,99,235,.22);color:#93bbff}
+.nav-link i{width:16px;text-align:center;font-size:.85rem}
 
-/* ── Drop zone ───────────────────────────────────────────────────────────── */
-.dropzone{border:2px dashed var(--border);border-radius:16px;padding:56px 40px;text-align:center;cursor:pointer;transition:all var(--dur-normal) var(--ease-smooth);background:var(--grad-card);position:relative;overflow:hidden}
-.dropzone:hover,.dropzone.drag{border-color:var(--blue);background:var(--surface-2);transform:scale(1.01);box-shadow:var(--shadow-blue)}
-.dropzone::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(26,86,219,0.03),transparent);transform:translateX(-100%);transition:transform var(--dur-slow) var(--ease-smooth)}
-.dropzone:hover::before{transform:translateX(100%)}
-.dropzone-icon{font-size:2.6rem;color:var(--green);margin-bottom:16px;transition:transform var(--dur-normal) var(--ease-spring)}
-.dropzone:hover .dropzone-icon{transform:scale(1.1)}
-.dropzone p{color:var(--text);margin-bottom:6px;font-size:.95rem;font-weight:600}
-.dropzone span{font-size:.82rem;color:var(--muted)}
-.required-cols-info{background:var(--surface-2);border-radius:12px;padding:16px 20px;margin-bottom:20px;font-size:.85rem;color:var(--navy);border-left:4px solid var(--blue);box-shadow:var(--shadow-sm)}
-.required-cols-info b{display:block;margin-bottom:6px}
+/* Candidate list in sidebar */
+.cand-section{padding:0 12px 16px}
+.cand-section-head{
+  font-size:.62rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(255,255,255,.28);
+  padding:0 10px;margin-bottom:8px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.cand-count-badge{
+  background:var(--blue);color:#fff;
+  font-size:.6rem;font-weight:700;
+  padding:1px 7px;border-radius:20px;letter-spacing:0;
+}
+.cand-list-inner{display:flex;flex-direction:column;gap:2px}
+.cand-pill{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:9px;
+  cursor:pointer;transition:all .18s var(--ease);
+  border:1px solid transparent;
+}
+.cand-pill:hover{background:rgba(255,255,255,.06)}
+.cand-pill.active{background:rgba(37,99,235,.2);border-color:rgba(37,99,235,.3)}
+.cand-avatar{
+  width:28px;height:28px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,var(--blue),var(--teal));
+}
+.cand-pill-name{font-size:.78rem;font-weight:600;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cand-pill-role{font-size:.67rem;color:rgba(255,255,255,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-empty{
+  padding:20px 12px;text-align:center;
+  color:rgba(255,255,255,.22);font-size:.78rem;line-height:1.6
+}
+.sidebar-empty i{font-size:1.4rem;display:block;margin-bottom:8px;opacity:.4}
 
-/* ── Employment type cards ───────────────────────────────────────────────── */
-.emp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:16px 0}
-.emp-card{border:2px solid var(--border);border-radius:16px;padding:22px 20px;cursor:pointer;text-align:center;transition:all var(--dur-normal) var(--ease-smooth);background:var(--grad-card);position:relative;overflow:hidden}
-.emp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--blue);opacity:0;transition:opacity var(--dur-fast) var(--ease-smooth)}
-.emp-card:hover{border-color:var(--blue);transform:translateY(-6px);box-shadow:var(--shadow-blue)}
-.emp-card:hover::before{opacity:1}
-.emp-card.selected{border-color:var(--blue);background:var(--surface-2);box-shadow:var(--shadow-blue)}
-.emp-card.selected::before{opacity:1}
-.emp-card i{font-size:1.9rem;margin-bottom:12px;display:block;transition:transform var(--dur-normal) var(--ease-spring)}
-.emp-card:hover i{transform:scale(1.1)}
-.emp-card-title{font-weight:700;font-size:.9rem;color:var(--navy)}
-.emp-card-sub{font-size:.78rem;color:var(--muted);margin-top:4px;line-height:1.5}
+/* ─── Main area ───────────────────────────────────────────────────── */
+.main{
+  margin-left:var(--sidebar-w);flex:1;
+  display:flex;flex-direction:column;min-height:100vh;
+}
 
-/* ── Pattern cards ───────────────────────────────────────────────────────── */
-.pattern-section-title{font-family:var(--font-display);font-size:1.2rem;color:var(--navy);margin-bottom:4px}
-.pattern-section-sub{color:var(--muted);font-size:.85rem;margin-bottom:20px}
-.pattern-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:20px}
-.pattern-card{border:2px solid var(--border);border-radius:16px;padding:18px 16px 14px;cursor:pointer;transition:all var(--dur-normal) var(--ease-smooth);position:relative;background:var(--grad-card);overflow:hidden;box-shadow:var(--shadow-sm)}
-.pattern-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--blue);opacity:0;transition:opacity var(--dur-fast) var(--ease-smooth)}
-.pattern-card:hover{border-color:var(--blue);transform:translateY(-6px);box-shadow:var(--shadow-blue)}
-.pattern-card:hover::before{opacity:1}
-.pattern-card.selected{border-color:var(--blue);background:var(--surface-2);box-shadow:var(--shadow-blue)}
-.pattern-card.selected::before{opacity:1}
-.pattern-swatch{width:32px;height:32px;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;color:#fff;transition:transform var(--dur-fast) var(--ease-spring)}
-.pattern-card:hover .pattern-swatch{transform:scale(1.15)}
-.pattern-card h4{font-size:.9rem;font-weight:700;color:var(--navy);margin-bottom:5px}
-.pattern-card p{font-size:.75rem;color:var(--muted);line-height:1.55;margin:0}
-.pattern-check{position:absolute;top:11px;right:11px;color:var(--blue);font-size:.85rem;opacity:0;transition:opacity var(--dur-fast) var(--ease-smooth);transform:scale(0)}
-.pattern-card.selected .pattern-check{opacity:1;transform:scale(1)}
-.pattern-custom-badge{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;font-weight:700;background:var(--gold);color:#fff;border-radius:20px;padding:2px 8px;margin-bottom:10px;box-shadow:0 2px 8px rgba(245,158,11,0.3)}
+/* ─── Topbar ──────────────────────────────────────────────────────── */
+.topbar{
+  height:var(--topbar-h);
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 16px rgba(0,0,0,.05);
+}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.topbar-title{
+  font-family:'Instrument Serif',serif;
+  font-size:1.3rem;color:var(--navy);font-weight:400
+}
+.topbar-crumb{
+  font-size:.75rem;color:var(--muted);font-weight:500;
+  display:flex;align-items:center;gap:6px
+}
+.topbar-crumb span{color:var(--text)}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 16px;border-radius:9px;font-size:.8rem;font-weight:600;
+  font-family:'Sora',sans-serif;transition:all .2s var(--ease);
+  white-space:nowrap;
+}
+.btn-ghost{
+  background:var(--bg);color:var(--text);
+  border:1px solid var(--border);
+}
+.btn-ghost:hover{background:var(--border);border-color:#ccd4e8}
+.btn-danger{
+  background:#fff0f0;color:var(--red);
+  border:1px solid #fecaca;
+}
+.btn-danger:hover{background:#fee2e2}
+.btn-primary{
+  background:linear-gradient(135deg,var(--navy-2),var(--blue));
+  color:#fff;border:none;
+  box-shadow:0 4px 14px var(--blue-glow);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,99,235,.3)}
+.btn-primary:active{transform:translateY(0)}
+.btn-success{
+  background:linear-gradient(135deg,#065f46,var(--green));
+  color:#fff;border:none;
+  box-shadow:0 4px 14px rgba(16,185,129,.25);
+}
+.btn-success:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(16,185,129,.35)}
+.btn-lg{padding:12px 26px;font-size:.88rem;border-radius:11px}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none!important}
+
+/* ─── Stepper ─────────────────────────────────────────────────────── */
+.stepper-bar{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:0 32px;
+  box-shadow:0 2px 10px rgba(0,0,0,.03);
+}
+.stepper{
+  display:flex;max-width:760px;padding:0;
+}
+.step-item{
+  flex:1;display:flex;align-items:center;
+  padding:16px 0;position:relative;
+}
+.step-item+.step-item::before{
+  content:'';position:absolute;left:0;top:50%;
+  width:100%;height:2px;
+  background:var(--border);
+  transform:translate(-50%,-50%);
+  z-index:0;transition:background .4s var(--ease);
+}
+.step-item.done+.step-item::before{background:var(--green)}
+.step-node{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.78rem;font-weight:700;flex-shrink:0;
+  position:relative;z-index:1;
+  transition:all .35s var(--spring);border:2px solid var(--border);
+  background:var(--surface);color:var(--muted);
+}
+.step-item.active .step-node{
+  background:var(--blue);border-color:var(--blue);color:#fff;
+  box-shadow:0 0 0 5px rgba(37,99,235,.15);
+}
+.step-item.done .step-node{
+  background:var(--green);border-color:var(--green);color:#fff;
+}
+.step-meta{margin-left:11px}
+.step-num{font-size:.67rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.step-name{font-size:.82rem;font-weight:600;color:var(--muted);transition:color .2s}
+.step-item.active .step-name{color:var(--blue)}
+.step-item.done .step-name{color:var(--green)}
+
+/* ─── Content area ────────────────────────────────────────────────── */
+.content{flex:1;padding:32px;max-width:1000px;width:100%}
+
+/* ─── Panels ──────────────────────────────────────────────────────── */
+.panel{display:none}
+.panel.active{display:block;animation:riseIn .38s var(--spring) backwards}
+@keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── Upload card ─────────────────────────────────────────────────── */
+.upload-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:40px;
+  box-shadow:0 4px 28px rgba(11,22,48,.06);
+}
+.upload-card-title{
+  font-family:'Instrument Serif',serif;
+  font-size:1.5rem;color:var(--navy);margin-bottom:5px;font-weight:400;
+}
+.upload-card-sub{font-size:.84rem;color:var(--muted);margin-bottom:28px;line-height:1.6}
+
+/* Required columns strip */
+.cols-strip{
+  background:linear-gradient(135deg,#eff6ff,#f0fdf4);
+  border:1px solid #bfdbfe;border-radius:13px;
+  padding:16px 20px;margin-bottom:26px;
+  display:flex;align-items:flex-start;gap:14px;
+}
+.cols-strip-icon{
+  width:36px;height:36px;border-radius:9px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--blue),var(--teal));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:.85rem;
+  box-shadow:0 3px 10px rgba(37,99,235,.25);
+}
+.cols-strip-content b{
+  display:block;font-size:.82rem;font-weight:700;
+  color:var(--navy);margin-bottom:7px;
+}
+.col-tags{display:flex;flex-wrap:wrap;gap:6px}
+.col-tag{
+  background:#fff;border:1px solid #bfdbfe;
+  color:#1d4ed8;font-size:.72rem;font-weight:700;
+  padding:3px 10px;border-radius:6px;
+  font-family:'Courier New',monospace;letter-spacing:.01em;
+}
+.col-tag.optional{
+  background:#fff;border-color:var(--border);
+  color:var(--muted);font-weight:500;
+}
+
+/* Drop zone */
+.dropzone{
+  border:2px dashed #c8d4ed;border-radius:16px;
+  padding:60px 32px;text-align:center;
+  cursor:pointer;position:relative;overflow:hidden;
+  background:var(--surface-2);
+  transition:all .3s var(--ease);
+}
+.dropzone:hover,.dropzone.drag{
+  border-color:var(--blue);
+  background:#eef4ff;
+  transform:scale(1.005);
+  box-shadow:0 8px 32px rgba(37,99,235,.1);
+}
+.dropzone-bg{
+  position:absolute;inset:0;pointer-events:none;overflow:hidden;
+  opacity:.04;
+}
+.dropzone-bg svg{position:absolute;right:-40px;bottom:-40px;width:220px}
+.dz-icon{
+  width:64px;height:64px;border-radius:18px;
+  background:linear-gradient(135deg,#dcfce7,#d1fae5);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;margin:0 auto 18px;
+  box-shadow:0 6px 20px rgba(16,185,129,.2);
+  transition:transform .3s var(--spring);
+}
+.dropzone:hover .dz-icon{transform:scale(1.1) translateY(-2px)}
+.dz-title{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:5px}
+.dz-sub{font-size:.82rem;color:var(--muted);margin-bottom:18px}
+.dz-browse{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--surface);border:1.5px solid var(--border);
+  color:var(--text);padding:9px 20px;border-radius:9px;
+  font-size:.8rem;font-weight:600;transition:all .2s var(--ease);
+}
+.dropzone:hover .dz-browse{border-color:var(--blue);color:var(--blue);background:#eef4ff}
+.dz-types{
+  font-size:.72rem;color:var(--muted);margin-top:12px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.dz-types span{
+  background:var(--border);color:var(--muted);
+  font-size:.68rem;font-weight:600;padding:2px 7px;border-radius:4px;
+}
+
+/* Upload success bar */
+.upload-success{
+  background:linear-gradient(135deg,#ecfdf5,#d1fae5);
+  border:1px solid #a7f3d0;border-radius:13px;
+  padding:16px 20px;margin-top:18px;
+  display:flex;align-items:center;gap:14px;
+  animation:riseIn .3s var(--spring) backwards;
+}
+.upload-success-icon{
+  width:40px;height:40px;border-radius:10px;flex-shrink:0;
+  background:var(--green);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;box-shadow:0 4px 12px rgba(16,185,129,.3);
+}
+.upload-success b{font-size:.88rem;color:#065f46;display:block;margin-bottom:2px}
+.upload-success span{font-size:.78rem;color:#047857}
+
+/* ─── Employment type cards ───────────────────────────────────────── */
+.section-title{
+  font-family:'Instrument Serif',serif;
+  font-size:1.35rem;color:var(--navy);margin-bottom:4px;font-weight:400;
+}
+.section-sub{font-size:.84rem;color:var(--muted);margin-bottom:24px;line-height:1.6}
+
+.emp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:8px}
+.emp-card{
+  border:2px solid var(--border);border-radius:16px;
+  padding:24px 18px 20px;cursor:pointer;text-align:center;
+  background:var(--surface-2);
+  transition:all .25s var(--ease);position:relative;overflow:hidden;
+}
+.emp-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--blue),var(--teal));
+  opacity:0;transition:opacity .2s;
+}
+.emp-card:hover{border-color:#c0cfee;transform:translateY(-4px);box-shadow:0 8px 28px rgba(37,99,235,.1)}
+.emp-card:hover::after{opacity:.5}
+.emp-card.selected{
+  border-color:var(--blue);
+  background:linear-gradient(135deg,#eff6ff,#f0f9ff);
+  box-shadow:0 6px 24px rgba(37,99,235,.14);
+}
+.emp-card.selected::after{opacity:1}
+.emp-check{
+  position:absolute;top:11px;right:11px;
+  width:20px;height:20px;border-radius:50%;
+  background:var(--blue);color:#fff;
+  font-size:.6rem;display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:scale(0);transition:all .2s var(--spring);
+}
+.emp-card.selected .emp-check{opacity:1;transform:scale(1)}
+.emp-icon{
+  font-size:1.8rem;margin-bottom:13px;display:block;
+  transition:transform .25s var(--spring);
+}
+.emp-card:hover .emp-icon{transform:scale(1.12)}
+.emp-label{font-size:.88rem;font-weight:700;color:var(--navy);margin-bottom:4px}
+.emp-desc{font-size:.74rem;color:var(--muted);line-height:1.5}
+
+/* ─── Pattern cards ───────────────────────────────────────────────── */
+.pattern-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:14px;margin-bottom:6px;
+}
+.pat-card{
+  border:2px solid var(--border);border-radius:16px;
+  padding:18px 16px 15px;cursor:pointer;
+  background:var(--surface-2);
+  transition:all .25s var(--ease);
+  position:relative;overflow:hidden;
+}
+.pat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--pat-col,var(--blue));opacity:0;
+  transition:opacity .2s;
+}
+.pat-card:hover{border-color:#c0cfee;transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.pat-card:hover::before{opacity:.7}
+.pat-card.selected{border-color:var(--blue);background:#eff6ff;box-shadow:0 6px 22px rgba(37,99,235,.12)}
+.pat-card.selected::before{opacity:1}
+.pat-check{
+  position:absolute;top:10px;right:10px;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--blue);color:#fff;
+  font-size:.55rem;display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:scale(0);transition:all .2s var(--spring);
+}
+.pat-card.selected .pat-check{opacity:1;transform:scale(1)}
+.pat-swatch{
+  width:34px;height:34px;border-radius:9px;
+  margin-bottom:11px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.82rem;font-weight:800;color:#fff;
+  transition:transform .2s var(--spring);
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+.pat-card:hover .pat-swatch{transform:scale(1.12)}
+.pat-name{font-size:.86rem;font-weight:700;color:var(--navy);margin-bottom:4px}
+.pat-desc{font-size:.72rem;color:var(--muted);line-height:1.5}
+.custom-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:.62rem;font-weight:700;
+  background:var(--gold);color:#fff;
+  border-radius:20px;padding:1px 8px;margin-bottom:8px;
+  box-shadow:0 2px 8px rgba(217,119,6,.3);letter-spacing:.02em;
+}
 
 /* Custom text area */
-.custom-text-block{background:#fffbeb;border:1.5px solid var(--gold);border-radius:12px;padding:20px;margin-top:4px;animation:fadeSlideUp var(--dur-normal) var(--ease-spring) backwards}
-.custom-text-block label{display:block;font-size:.85rem;font-weight:600;color:#92400e;margin-bottom:8px}
-.custom-text-block textarea{width:100%;border:1.5px solid #fcd34d;border-radius:8px;padding:12px;font-size:.85rem;font-family:'Courier New',monospace;color:var(--text);background:#fffdf5;resize:vertical;min-height:220px;line-height:1.7;box-sizing:border-box;transition:border-color var(--dur-fast) var(--ease-smooth);outline:none}
-.custom-text-block textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,158,11,0.12)}
-.custom-text-block .hint{font-size:.75rem;color:#b45309;margin-top:8px;line-height:1.6}
-.placeholder-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.placeholder-tag{background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:.72rem;font-family:'Courier New',monospace;padding:2px 8px;border-radius:4px;cursor:pointer;transition:all var(--dur-fast) var(--ease-smooth)}
-.placeholder-tag:hover{background:#fde68a;transform:translateY(-1px)}
+.custom-block{
+  background:#fffbeb;border:1.5px solid #fcd34d;
+  border-radius:14px;padding:22px 24px;margin-top:6px;
+  animation:riseIn .3s var(--spring) backwards;
+}
+.custom-block label{
+  display:block;font-size:.78rem;font-weight:700;
+  color:#92400e;margin-bottom:10px;letter-spacing:.03em;
+  text-transform:uppercase;
+}
+.ph-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.ph-tag{
+  background:#fef3c7;border:1px solid #fcd34d;
+  color:#92400e;font-size:.7rem;font-weight:600;
+  font-family:'Courier New',monospace;
+  padding:3px 9px;border-radius:5px;cursor:pointer;
+  transition:all .15s var(--ease);
+}
+.ph-tag:hover{background:#fde68a;transform:translateY(-1px)}
+.custom-block textarea{
+  width:100%;border:1.5px solid #fde68a;border-radius:9px;
+  padding:13px 15px;font-size:.83rem;font-family:'Courier New',monospace;
+  color:var(--text);background:#fffdf5;
+  resize:vertical;min-height:200px;line-height:1.75;
+  transition:border-color .2s;outline:none;
+}
+.custom-block textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,158,11,.1)}
+.custom-hint{font-size:.73rem;color:#b45309;margin-top:8px;line-height:1.6}
 
-/* ── Preview pane ────────────────────────────────────────────────────────── */
-.preview-layout{display:flex;gap:20px;align-items:flex-start}
-.preview-cand-list{width:210px;flex-shrink:0;background:var(--grad-card);border-radius:16px;border:1px solid var(--border);overflow:hidden;position:sticky;top:80px;box-shadow:var(--shadow-sm);transition:all var(--dur-normal) var(--ease-smooth)}
-.preview-cand-list:hover{box-shadow:var(--shadow-md)}
-.preview-cand-list h4{padding:14px 16px;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);margin:0}
-.preview-cand-item{padding:11px 16px;cursor:pointer;font-size:.84rem;border-bottom:1px solid var(--border);transition:all var(--dur-fast) var(--ease-smooth);color:var(--navy)}
-.preview-cand-item:last-child{border-bottom:none}
-.preview-cand-item:hover{background:var(--surface-2);color:var(--blue);transform:translateX(2px)}
-.preview-cand-item.active{background:var(--surface-2);color:var(--blue);font-weight:700;border-left:3px solid var(--blue)}
-.preview-pane{flex:1;background:var(--surface);border-radius:16px;border:1px solid var(--border);padding:28px;min-height:420px;box-shadow:var(--shadow-sm);transition:all var(--dur-normal) var(--ease-smooth)}
-.preview-pane:hover{box-shadow:var(--shadow-md)}
-.preview-loading{text-align:center;padding:60px 0;color:var(--muted)}
-.preview-loading i{font-size:2rem;opacity:.25;display:block;margin-bottom:12px}
-.preview-spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:10px}
+/* ─── Preview step ────────────────────────────────────────────────── */
+.preview-wrap{display:flex;gap:22px;align-items:flex-start}
+.preview-cand-col{
+  width:220px;flex-shrink:0;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;
+  box-shadow:0 4px 18px rgba(0,0,0,.05);
+  position:sticky;top:calc(var(--topbar-h) + 64px);
+}
+.preview-cand-col-head{
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  font-size:.72rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.preview-cand-row{
+  padding:11px 16px;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:all .18s var(--ease);
+  border-left:3px solid transparent;
+}
+.preview-cand-row:last-child{border-bottom:none}
+.preview-cand-row:hover{background:var(--surface-2)}
+.preview-cand-row.active{
+  background:#eff6ff;border-left-color:var(--blue);
+}
+.pcr-name{font-size:.82rem;font-weight:600;color:var(--navy)}
+.pcr-role{font-size:.7rem;color:var(--muted);margin-top:1px}
 
-/* ── Utility ─────────────────────────────────────────────────────────────── */
-.nav-btns{display:flex;gap:12px;margin-top:24px;justify-content:flex-end}
-.section-label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:12px}
+.preview-pane{
+  flex:1;background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:28px;min-height:400px;
+  box-shadow:0 4px 18px rgba(0,0,0,.05);
+  transition:box-shadow .2s;
+}
+.preview-pane:hover{box-shadow:0 8px 32px rgba(0,0,0,.08)}
+.preview-empty{
+  text-align:center;padding:70px 0;color:var(--muted);
+}
+.preview-empty i{font-size:2.2rem;opacity:.2;display:block;margin-bottom:14px}
+.preview-empty p{font-size:.84rem}
+.preview-spin{
+  display:inline-block;width:26px;height:26px;
+  border:2.5px solid var(--border);border-top-color:var(--blue);
+  border-radius:50%;animation:spin .65s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Summary pills */
+.summary-pills{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:20px}
+.sum-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 13px;border-radius:20px;
+  font-size:.76rem;font-weight:600;
+}
+.sum-pill.blue{background:#eff6ff;color:var(--blue)}
+.sum-pill.green{background:#ecfdf5;color:var(--green)}
+.sum-pill.slate{background:#f1f5f9;color:#64748b}
+
+/* ─── Nav buttons row ─────────────────────────────────────────────── */
+.nav-row{
+  display:flex;align-items:center;justify-content:flex-end;
+  gap:12px;margin-top:28px;padding-top:22px;
+  border-top:1px solid var(--border);
+}
+
+/* ─── Candidate table (upload result) ────────────────────────────── */
+.cand-table-wrap{
+  border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;margin-top:18px;
+  box-shadow:0 2px 12px rgba(0,0,0,.04);
+}
+.cand-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.cand-table thead tr{background:var(--navy);color:rgba(255,255,255,.75)}
+.cand-table thead th{
+  padding:11px 14px;text-align:left;font-size:.68rem;
+  font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  white-space:nowrap;
+}
+.cand-table tbody tr{
+  border-bottom:1px solid var(--border);
+  transition:background .15s;
+}
+.cand-table tbody tr:last-child{border-bottom:none}
+.cand-table tbody tr:hover{background:#f7f9ff}
+.cand-table td{
+  padding:10px 14px;color:var(--text);
+  vertical-align:middle;white-space:nowrap;
+}
+.cand-table td:first-child{font-weight:600}
+.tbl-avatar{
+  width:26px;height:26px;border-radius:7px;
+  background:linear-gradient(135deg,var(--blue-l),var(--teal));
+  color:#fff;font-size:.65rem;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;
+  margin-right:8px;vertical-align:middle;flex-shrink:0;
+}
+.row-count{
+  display:inline-block;background:var(--blue);color:#fff;
+  font-size:.62rem;font-weight:700;padding:1px 8px;
+  border-radius:20px;margin-left:8px;
+}
+
+/* ─── Toast ───────────────────────────────────────────────────────── */
+#toast{
+  position:fixed;bottom:28px;right:28px;z-index:9999;
+  display:flex;flex-direction:column;gap:8px;
+  pointer-events:none;
+}
+.toast-msg{
+  background:var(--navy);color:#fff;
+  padding:13px 18px;border-radius:11px;
+  font-size:.82rem;font-weight:500;
+  box-shadow:0 8px 28px rgba(0,0,0,.22);
+  display:flex;align-items:center;gap:9px;
+  animation:toastIn .3s var(--spring) backwards;
+  max-width:320px;pointer-events:auto;
+}
+.toast-msg.success{background:linear-gradient(135deg,#064e3b,var(--green))}
+.toast-msg.error{background:linear-gradient(135deg,#7f1d1d,var(--red))}
+.toast-msg.warning{background:linear-gradient(135deg,#78350f,var(--amber))}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* ─── Loading overlay ─────────────────────────────────────────────── */
+#loadingOverlay{
+  position:fixed;inset:0;background:rgba(11,22,48,.55);
+  display:none;z-index:8000;align-items:center;justify-content:center;
+  backdrop-filter:blur(3px);
+}
+#loadingOverlay.show{display:flex}
+.loader-card{
+  background:var(--surface);border-radius:18px;
+  padding:36px 44px;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.22);
+}
+.loader-ring{
+  width:48px;height:48px;border:3.5px solid var(--border);
+  border-top-color:var(--blue);border-radius:50%;
+  animation:spin .7s linear infinite;margin:0 auto 16px;
+}
+.loader-card p{font-size:.88rem;color:var(--muted)}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .main{margin-left:0}
+  .emp-grid{grid-template-columns:1fr}
+  .preview-wrap{flex-direction:column}
+  .preview-cand-col{width:100%;position:static}
+}
 </style>
-{% endblock %}
+</head>
+<body>
+<div class="app">
 
-{% block body %}
-<div class="upload-layout">
-
-  <!-- ── Sidebar ── -->
-  <div class="upload-sidebar">
-    <div class="upload-sidebar-head">
-      <div class="sidebar-logo">
-        <div class="sidebar-logo-icon"><i class="fas fa-file-contract" style="color:#fff;font-size:.9rem"></i></div>
-        OfferFlow
-      </div>
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-head">
+    <div class="brand-icon"><i class="fas fa-file-contract"></i></div>
+    <div>
+      <div class="brand-name">OfferFlow</div>
+      <div class="brand-tag">HR Portal</div>
     </div>
-    <a href="/dashboard" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
-    <div id="candListSidebar" class="cand-list">
-      <div style="padding:20px;color:rgba(255,255,255,.3);font-size:.8rem;text-align:center">
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-label">Navigation</div>
+    <a href="/dashboard" class="nav-link">
+      <i class="fas fa-th-large"></i> Dashboard
+    </a>
+    <a href="/upload-excel" class="nav-link active">
+      <i class="fas fa-upload"></i> Upload &amp; Send
+    </a>
+    <a href="/settings" class="nav-link">
+      <i class="fas fa-cog"></i> Settings
+    </a>
+    <a href="/logout" class="nav-link" style="margin-top:auto">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+  </nav>
+
+  <!-- Live candidate list -->
+  <div class="cand-section">
+    <div class="cand-section-head">
+      Candidates
+      <span class="cand-count-badge" id="sidebarCount" style="display:none">0</span>
+    </div>
+    <div class="cand-list-inner" id="sidebarCands">
+      <div class="sidebar-empty">
+        <i class="fas fa-users"></i>
         Upload an Excel file to see candidates here
       </div>
     </div>
   </div>
+</aside>
 
-  <!-- ── Main ── -->
-  <div class="upload-main">
+<!-- ══════════════════ MAIN ══════════════════ -->
+<div class="main">
 
-    <div class="topbar2">
-      <h1>Upload &amp; Send Offer Letters</h1>
-      <div style="display:flex;gap:10px">
-        <button class="btn btn-ghost btn-sm" onclick="location.href='/dashboard'"><i class="fas fa-th-large"></i> Dashboard</button>
-        <button class="btn btn-danger btn-sm" onclick="location.href='/logout'"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Upload &amp; Send Offers</div>
+      <div class="topbar-crumb">
+        <i class="fas fa-chevron-right" style="font-size:.6rem;color:var(--border)"></i>
+        <span id="topbarStep">Step 1 — Upload Excel</span>
       </div>
     </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" onclick="location.href='/dashboard'">
+        <i class="fas fa-th-large"></i> Dashboard
+      </button>
+      <button class="btn btn-danger" onclick="location.href='/logout'">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </div>
 
-    <!-- Stepper -->
+  <!-- Stepper bar -->
+  <div class="stepper-bar">
     <div class="stepper">
-      <div class="step-item">
-        <div class="step-circle active" id="sc1">1</div>
-        <div class="step-label active" id="sl1">Upload Excel</div>
+      <div class="step-item active" id="si1">
+        <div class="step-node" id="sn1">1</div>
+        <div class="step-meta">
+          <div class="step-num">Step 1</div>
+          <div class="step-name">Upload Excel</div>
+        </div>
       </div>
-      <div class="step-line" id="line1"></div>
-      <div class="step-item">
-        <div class="step-circle inactive" id="sc2">2</div>
-        <div class="step-label" id="sl2">Employment Type</div>
+      <div class="step-item" id="si2">
+        <div class="step-node" id="sn2">2</div>
+        <div class="step-meta">
+          <div class="step-num">Step 2</div>
+          <div class="step-name">Employment Type</div>
+        </div>
       </div>
-      <div class="step-line" id="line2"></div>
-      <div class="step-item">
-        <div class="step-circle inactive" id="sc3">3</div>
-        <div class="step-label" id="sl3">Choose Pattern</div>
+      <div class="step-item" id="si3">
+        <div class="step-node" id="sn3">3</div>
+        <div class="step-meta">
+          <div class="step-num">Step 3</div>
+          <div class="step-name">Choose Pattern</div>
+        </div>
       </div>
-      <div class="step-line" id="line3"></div>
-      <div class="step-item">
-        <div class="step-circle inactive" id="sc4">4</div>
-        <div class="step-label" id="sl4">Preview &amp; Send</div>
+      <div class="step-item" id="si4">
+        <div class="step-node" id="sn4">4</div>
+        <div class="step-meta">
+          <div class="step-num">Step 4</div>
+          <div class="step-name">Preview &amp; Send</div>
+        </div>
       </div>
     </div>
+  </div>
 
-    <div class="step-content">
+  <!-- ── Content ── -->
+  <div class="content">
 
-      <!-- ══ Step 1: Upload ══════════════════════════════════════════════════ -->
-      <div class="step-panel active" id="step1">
-        <div class="required-cols-info">
-          <b><i class="fas fa-info-circle" style="color:var(--blue)"></i>&nbsp; Required Excel Columns</b>
-          <code>Name, Gmail id, Role, Joining date, Salary</code> — Extra columns (Phone, Department, etc.) are accepted and stored.
+    <!-- ══ STEP 1: Upload ══ -->
+    <div class="panel active" id="panel1">
+      <div class="upload-card">
+        <div class="upload-card-title">Upload Candidate Excel File</div>
+        <div class="upload-card-sub">Import your candidate list in .xlsx format — the system reads each row and prepares individual offer letters.</div>
+
+        <!-- Required columns -->
+        <div class="cols-strip">
+          <div class="cols-strip-icon"><i class="fas fa-table-columns"></i></div>
+          <div class="cols-strip-content">
+            <b><i class="fas fa-circle-info" style="color:var(--blue);margin-right:5px"></i>Required Columns</b>
+            <div class="col-tags">
+              <span class="col-tag">Name</span>
+              <span class="col-tag">Gmail id</span>
+              <span class="col-tag">Role</span>
+              <span class="col-tag">Joining date</span>
+              <span class="col-tag">Salary</span>
+              <span class="col-tag optional">+ any extra columns</span>
+            </div>
+          </div>
         </div>
+
+        <!-- Drop zone -->
         <div class="dropzone" id="dropzone"
              onclick="document.getElementById('fileInput').click()"
-             ondragover="handleDrag(event,true)"
-             ondragleave="handleDrag(event,false)"
-             ondrop="handleDrop(event)">
-          <div class="dropzone-icon"><i class="fas fa-file-excel"></i></div>
-          <p><b>Drop your .xlsx file here</b></p>
-          <span>or click to browse</span>
+             ondragover="onDragOver(event)"
+             ondragleave="onDragLeave(event)"
+             ondrop="onDrop(event)">
+          <!-- Background decoration -->
+          <div class="dropzone-bg">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="20" y="20" width="160" height="200" rx="12" stroke="#0b1630" stroke-width="8"/>
+              <rect x="50" y="60" width="100" height="8" rx="4" fill="#0b1630"/>
+              <rect x="50" y="82" width="80" height="8" rx="4" fill="#0b1630"/>
+              <rect x="50" y="104" width="90" height="8" rx="4" fill="#0b1630"/>
+            </svg>
+          </div>
+          <div class="dz-icon"><i class="fas fa-file-excel" style="color:#10b981"></i></div>
+          <div class="dz-title">Drop your Excel file here</div>
+          <div class="dz-sub">Drag &amp; drop or click to browse your computer</div>
+          <div class="dz-browse">
+            <i class="fas fa-folder-open"></i> Browse Files
+          </div>
+          <div class="dz-types">
+            Accepted formats: <span>.xlsx</span> &nbsp;·&nbsp; Max size: <span>10 MB</span>
+          </div>
         </div>
+
         <input type="file" id="fileInput" accept=".xlsx" style="display:none" onchange="handleFile(this.files[0])">
-        <div id="uploadResult" style="margin-top:16px"></div>
-        <div class="nav-btns">
-          <button class="btn btn-primary" id="toStep2Btn" style="display:none" onclick="goStep(2)">
-            Next: Employment Type <i class="fas fa-arrow-right"></i>
+        <div id="uploadFeedback"></div>
+
+        <!-- Candidate table preview -->
+        <div id="candTableWrap" style="display:none;margin-top:24px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="font-size:.82rem;font-weight:700;color:var(--navy)">
+              Candidates Preview
+              <span class="row-count" id="rowCount">0</span>
+            </div>
+            <button class="btn btn-ghost" style="font-size:.75rem;padding:6px 12px" onclick="resetUpload()">
+              <i class="fas fa-redo"></i> Re-upload
+            </button>
+          </div>
+          <div class="cand-table-wrap">
+            <table class="cand-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Joining Date</th>
+                  <th>Salary</th>
+                </tr>
+              </thead>
+              <tbody id="candTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="nav-row">
+          <button class="btn btn-primary btn-lg" id="toStep2Btn" style="display:none" onclick="goStep(2)">
+            Employment Type <i class="fas fa-arrow-right"></i>
           </button>
         </div>
       </div>
+    </div><!-- /panel1 -->
 
-      <!-- ══ Step 2: Employment Type ═════════════════════════════════════════ -->
-      <div class="step-panel" id="step2">
-        <h3 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy);margin-bottom:4px">Select Employment Type</h3>
-        <p style="color:var(--muted);font-size:.85rem;margin-bottom:20px">Applies to all candidates in this batch</p>
+    <!-- ══ STEP 2: Employment Type ══ -->
+    <div class="panel" id="panel2">
+      <div class="upload-card">
+        <div class="upload-card-title">Select Employment Type</div>
+        <div class="upload-card-sub">This applies to all candidates in this batch. You can run separate batches for different employment types.</div>
+
         <div class="emp-grid">
-          <div class="emp-card selected" onclick="selectEmp('full_time',this)">
-            <i class="fas fa-briefcase" style="color:var(--blue)"></i>
-            <div class="emp-card-title">Full Time</div>
-            <div class="emp-card-sub">Permanent employment with full benefits</div>
+          <div class="emp-card selected" id="emp-full_time" onclick="selectEmp('full_time',this)">
+            <div class="emp-check"><i class="fas fa-check"></i></div>
+            <span class="emp-icon">💼</span>
+            <div class="emp-label">Full Time</div>
+            <div class="emp-desc">Permanent employment with full benefits and standard working hours</div>
           </div>
-          <div class="emp-card" onclick="selectEmp('part_time',this)">
-            <i class="fas fa-clock" style="color:var(--amber)"></i>
-            <div class="emp-card-title">Part Time</div>
-            <div class="emp-card-sub">Flexible hours, partial benefits</div>
+          <div class="emp-card" id="emp-part_time" onclick="selectEmp('part_time',this)">
+            <div class="emp-check"><i class="fas fa-check"></i></div>
+            <span class="emp-icon">⏱️</span>
+            <div class="emp-label">Part Time</div>
+            <div class="emp-desc">Flexible schedule with reduced hours and partial benefits package</div>
           </div>
-          <div class="emp-card" onclick="selectEmp('internship',this)">
-            <i class="fas fa-graduation-cap" style="color:var(--teal)"></i>
-            <div class="emp-card-title">Internship</div>
-            <div class="emp-card-sub">Temporary learning opportunity</div>
-          </div>
-        </div>
-        <div class="nav-btns">
-          <button class="btn btn-ghost" onclick="goStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
-          <button class="btn btn-primary" onclick="goStep(3)">Next: Choose Pattern <i class="fas fa-arrow-right"></i></button>
-        </div>
-      </div>
-
-      <!-- ══ Step 3: Pattern ════════════════════════════════════════════════ -->
-      <div class="step-panel" id="step3">
-        <h3 class="pattern-section-title">Select Offer Letter Pattern</h3>
-        <p class="pattern-section-sub">Each pattern produces a distinctly structured PDF — pick one that fits your company's style</p>
-
-        <!-- Pattern cards rendered by JS from /api/patterns -->
-        <div class="pattern-grid" id="patternGrid">
-          <!-- skeleton -->
-          <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:.85rem">
-            <div style="display:inline-block;width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:10px"></div>
-            <div>Loading templates…</div>
+          <div class="emp-card" id="emp-internship" onclick="selectEmp('internship',this)">
+            <div class="emp-check"><i class="fas fa-check"></i></div>
+            <span class="emp-icon">🎓</span>
+            <div class="emp-label">Internship</div>
+            <div class="emp-desc">Temporary learning opportunity for students and fresh graduates</div>
           </div>
         </div>
 
-        <!-- Custom text area — shown only when Custom is selected -->
-        <div class="custom-text-block" id="customTextBlock" style="display:none">
-          <label><i class="fas fa-pen"></i>&nbsp; Custom Offer Letter Body</label>
-          <div class="placeholder-tags" style="margin-bottom:12px">
-            <span style="font-size:.75rem;color:#92400e;font-weight:600;align-self:center">Insert:</span>
-            <span class="placeholder-tag" onclick="insertPlaceholder('{name}')">&#123;name&#125;</span>
-            <span class="placeholder-tag" onclick="insertPlaceholder('{role}')">&#123;role&#125;</span>
-            <span class="placeholder-tag" onclick="insertPlaceholder('{company}')">&#123;company&#125;</span>
-            <span class="placeholder-tag" onclick="insertPlaceholder('{joining}')">&#123;joining&#125;</span>
-            <span class="placeholder-tag" onclick="insertPlaceholder('{salary}')">&#123;salary&#125;</span>
-            <span class="placeholder-tag" onclick="insertPlaceholder('{date}')">&#123;date&#125;</span>
-          </div>
-          <textarea id="customText" placeholder="Dear {name},
-
-We are pleased to offer you the position of {role} at {company}.
-
-Your joining date is {joining} and your annual CTC will be ₹{salary}.
-
-This offer is contingent upon successful completion of background verification.
-
-We look forward to welcoming you to our team.
-
-Warm regards,
-HR Department"></textarea>
-          <div class="hint">
-            <i class="fas fa-lightbulb"></i>&nbsp;
-            Use the tag buttons above to insert placeholders — they'll be replaced with each candidate's actual data in the PDF.<br>
-            Write your complete letter body here; it will be rendered directly on the company letterhead.
-          </div>
-        </div>
-
-        <div class="nav-btns">
-          <button class="btn btn-ghost" onclick="goStep(2)"><i class="fas fa-arrow-left"></i> Back</button>
-          <button class="btn btn-primary" onclick="goStep(4)">Preview Letters <i class="fas fa-arrow-right"></i></button>
-        </div>
-      </div>
-
-      <!-- ══ Step 4: Preview & Send ══════════════════════════════════════════ -->
-      <div class="step-panel" id="step4">
-        <h3 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy);margin-bottom:16px">
-          Preview &amp; Send Offer Letters
-        </h3>
-
-        <!-- Pattern + Employment type summary pill -->
-        <div id="selectionSummary" style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap"></div>
-
-        <div class="preview-layout">
-          <!-- Candidate list -->
-          <div class="preview-cand-list">
-            <h4>Candidates <span id="candCount" style="font-weight:400;color:var(--muted)"></span></h4>
-            <div id="previewCandList">
-              <div style="padding:20px;text-align:center;color:var(--muted);font-size:.82rem">No candidates yet</div>
-            </div>
-          </div>
-
-          <!-- Preview area -->
-          <div class="preview-pane" id="previewPane">
-            <div class="preview-loading">
-              <i class="fas fa-file-alt"></i>
-              Select a candidate on the left to preview their offer letter
-            </div>
-          </div>
-        </div>
-
-        <div class="nav-btns" style="margin-top:20px">
-          <button class="btn btn-ghost" onclick="goStep(3)"><i class="fas fa-arrow-left"></i> Back</button>
-          <button class="btn btn-success" id="sendBtn" onclick="saveAndSend()">
-            <i class="fas fa-paper-plane"></i> Save &amp; Send All Emails
+        <div class="nav-row">
+          <button class="btn btn-ghost btn-lg" onclick="goStep(1)">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <button class="btn btn-primary btn-lg" onclick="goStep(3)">
+            Choose Pattern <i class="fas fa-arrow-right"></i>
           </button>
         </div>
       </div>
+    </div><!-- /panel2 -->
 
-    </div><!-- /step-content -->
-  </div><!-- /upload-main -->
-</div><!-- /upload-layout -->
-{% endblock %}
+    <!-- ══ STEP 3: Pattern ══ -->
+    <div class="panel" id="panel3">
+      <div class="upload-card">
+        <div class="upload-card-title">Choose Offer Letter Template</div>
+        <div class="upload-card-sub">Each template produces a distinctly styled PDF attached to the offer email. Pick one that matches your company's brand.</div>
 
-{% block scripts %}
+        <div class="pattern-grid" id="patternGrid">
+          <!-- Filled by JS -->
+          <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+            <div class="preview-spin" style="margin:0 auto 12px"></div>
+            Loading templates…
+          </div>
+        </div>
+
+        <!-- Custom text block -->
+        <div class="custom-block" id="customBlock" style="display:none">
+          <label><i class="fas fa-pen-nib"></i>&nbsp; Custom Letter Body</label>
+          <div class="ph-tags" style="margin-bottom:10px">
+            <span style="font-size:.72rem;color:#92400e;font-weight:600;align-self:center">Insert placeholder:</span>
+            <span class="ph-tag" onclick="insertPH('{name}')">&#123;name&#125;</span>
+            <span class="ph-tag" onclick="insertPH('{role}')">&#123;role&#125;</span>
+            <span class="ph-tag" onclick="insertPH('{company}')">&#123;company&#125;</span>
+            <span class="ph-tag" onclick="insertPH('{joining}')">&#123;joining&#125;</span>
+            <span class="ph-tag" onclick="insertPH('{salary}')">&#123;salary&#125;</span>
+            <span class="ph-tag" onclick="insertPH('{date}')">&#123;date&#125;</span>
+          </div>
+          <textarea id="customText" placeholder="Dear {name},&#10;&#10;We are pleased to offer you the position of {role} at {company}.&#10;&#10;Your joining date is {joining} and your annual CTC will be ₹{salary}.&#10;&#10;Warm regards,&#10;HR Department"></textarea>
+          <div class="custom-hint">
+            <i class="fas fa-lightbulb"></i>&nbsp;
+            Placeholders are replaced with each candidate's actual data in the generated PDF.
+          </div>
+        </div>
+
+        <div class="nav-row">
+          <button class="btn btn-ghost btn-lg" onclick="goStep(2)">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <button class="btn btn-primary btn-lg" onclick="goStep(4)">
+            Preview Letters <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </div><!-- /panel3 -->
+
+    <!-- ══ STEP 4: Preview & Send ══ -->
+    <div class="panel" id="panel4">
+      <div class="upload-card" style="padding-bottom:28px">
+        <div class="upload-card-title">Preview &amp; Send Offer Letters</div>
+        <div class="upload-card-sub">Review each candidate's letter before sending. Once you're satisfied, click Send All.</div>
+
+        <!-- Summary pills -->
+        <div class="summary-pills" id="summaryPills"></div>
+
+        <div class="preview-wrap">
+          <!-- Candidate list -->
+          <div class="preview-cand-col">
+            <div class="preview-cand-col-head">
+              Candidates
+              <span id="previewCount" style="font-size:.68rem;font-weight:400;color:var(--muted)"></span>
+            </div>
+            <div id="previewCandList">
+              <div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">No candidates</div>
+            </div>
+          </div>
+
+          <!-- Preview pane -->
+          <div class="preview-pane" id="previewPane">
+            <div class="preview-empty">
+              <i class="fas fa-file-alt"></i>
+              <p>Select a candidate on the left to preview their offer letter</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-row">
+          <button class="btn btn-ghost btn-lg" onclick="goStep(3)">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <button class="btn btn-success btn-lg" id="sendBtn" onclick="saveAndSend()">
+            <i class="fas fa-paper-plane"></i> Send All Offer Emails
+          </button>
+        </div>
+      </div>
+    </div><!-- /panel4 -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Toast container -->
+<div id="toast"></div>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay">
+  <div class="loader-card">
+    <div class="loader-ring"></div>
+    <p id="loaderMsg">Processing…</p>
+  </div>
+</div>
+
 <script>
-// ── State ─────────────────────────────────────────────────────────────────────
-let uploadedCandidates = [];
+/* ── State ───────────────────────────────────────────────────────── */
+let candidates  = [];
 let empType     = 'full_time';
-let selPattern  = 'classic';        // default — matches backend PATTERNS dict
-let patternsData = [];              // fetched from /api/patterns
+let selPattern  = 'classic';
+let patternsData= [];
+let currentStep = 1;
 
-// ── Stepper ───────────────────────────────────────────────────────────────────
+const STEP_LABELS = [
+  '','Step 1 — Upload Excel','Step 2 — Employment Type',
+  'Step 3 — Choose Pattern','Step 4 — Preview & Send'
+];
+
+/* ── Stepper ─────────────────────────────────────────────────────── */
 function goStep(n) {
+  // Guard: need candidates to advance past step 1
+  if (n > 1 && !candidates.length) {
+    showToast('Please upload an Excel file first', 'error'); return;
+  }
+  currentStep = n;
+  document.getElementById('topbarStep').textContent = STEP_LABELS[n];
+
   [1,2,3,4].forEach(i => {
-    document.getElementById('step'+i).classList.toggle('active', i===n);
-    const sc = document.getElementById('sc'+i);
-    const sl = document.getElementById('sl'+i);
-    const ln = document.getElementById('line'+i);
-    if (i < n) {
-      sc.className = 'step-circle done';
-      sc.innerHTML = '<i class="fas fa-check"></i>';
-      sl.className = 'step-label done';
-      if (ln) ln.classList.add('done');
-    } else if (i === n) {
-      sc.className = 'step-circle active';
-      sc.textContent = i;
-      sl.className = 'step-label active';
-    } else {
-      sc.className = 'step-circle inactive';
-      sc.textContent = i;
-      sl.className = 'step-label';
-    }
+    document.getElementById('panel'+i).classList.toggle('active', i===n);
+    const si = document.getElementById('si'+i);
+    const sn = document.getElementById('sn'+i);
+    si.className = 'step-item';
+    if (i < n)       { si.classList.add('done');   sn.innerHTML='<i class="fas fa-check"></i>'; }
+    else if (i===n)  { si.classList.add('active'); sn.textContent=i; }
+    else             { sn.textContent=i; }
   });
 
-  if (n === 3) loadPatterns();
-  if (n === 4) enterPreviewStep();
+  if (n===3) loadPatterns();
+  if (n===4) buildPreviewStep();
+
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ── Step 1: Upload ────────────────────────────────────────────────────────────
-function handleDrag(e, on) {
-  e.preventDefault();
-  document.getElementById('dropzone').classList.toggle('drag', on);
-}
-function handleDrop(e) {
+/* ── Step 1: Upload ──────────────────────────────────────────────── */
+function onDragOver(e) { e.preventDefault(); document.getElementById('dropzone').classList.add('drag'); }
+function onDragLeave(e){ document.getElementById('dropzone').classList.remove('drag'); }
+function onDrop(e)     {
   e.preventDefault();
   document.getElementById('dropzone').classList.remove('drag');
   handleFile(e.dataTransfer.files[0]);
 }
 
 async function handleFile(file) {
-  if (!file || !file.name.endsWith('.xlsx')) {
-    showToast('Please select a .xlsx file', 'error');
-    return;
+  if (!file) return;
+  if (!file.name.endsWith('.xlsx')) {
+    showToast('Please select a .xlsx file', 'error'); return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('File size exceeds 10 MB limit', 'error'); return;
   }
   const fd = new FormData();
   fd.append('file', file);
-  showLoading();
+  showLoader('Reading Excel file…');
   const r = await fetch('/api/upload-excel', { method:'POST', body:fd });
-  hideLoading();
+  hideLoader();
   const d = await r.json();
-  if (!d.success) { showToast(d.message, 'error'); return; }
+  if (!d.success) { showToast(d.message || 'Upload failed', 'error'); return; }
 
-  uploadedCandidates = d.records;
-  document.getElementById('uploadResult').innerHTML = `
-    <div style="background:#d1fae5;border-radius:8px;padding:14px 18px;display:flex;
-                align-items:center;gap:12px;margin-top:8px">
-      <i class="fas fa-check-circle" style="color:var(--green);font-size:1.3rem"></i>
+  candidates = d.records;
+  renderCandTable(d.records, d.columns);
+  renderSidebar();
+
+  document.getElementById('uploadFeedback').innerHTML = `
+    <div class="upload-success">
+      <div class="upload-success-icon"><i class="fas fa-check"></i></div>
       <div>
-        <b style="color:#065f46">${d.records.length} candidate${d.records.length!==1?'s':''} loaded</b><br>
-        <span style="font-size:.8rem;color:#047857">Columns: ${d.columns.join(', ')}</span>
+        <b>${d.records.length} candidate${d.records.length!==1?'s':''} loaded from <em>${file.name}</em></b>
+        <span>Columns detected: ${d.columns.join(', ')}</span>
       </div>
     </div>`;
   document.getElementById('toStep2Btn').style.display = 'inline-flex';
-  renderCandSidebar();
+  showToast(`${d.records.length} candidates imported successfully`, 'success');
 }
 
-function renderCandSidebar() {
-  const c = document.getElementById('candListSidebar');
-  if (!uploadedCandidates.length) {
-    c.innerHTML = '<div style="padding:20px;color:rgba(255,255,255,.3);font-size:.8rem;text-align:center">No candidates</div>';
+function renderCandTable(records, columns) {
+  document.getElementById('candTableWrap').style.display = 'block';
+  document.getElementById('rowCount').textContent = records.length;
+  document.getElementById('candTableBody').innerHTML = records.map((r,i) => `
+    <tr>
+      <td style="color:var(--muted);font-size:.72rem">${i+1}</td>
+      <td>
+        <span class="tbl-avatar">${(r['Name']||'?').charAt(0).toUpperCase()}</span>
+        ${r['Name']||'—'}
+      </td>
+      <td style="color:var(--muted)">${r['Gmail id']||'—'}</td>
+      <td>${r['Role']||'—'}</td>
+      <td style="color:var(--muted)">${r['Joining date']||'—'}</td>
+      <td>₹ ${r['Salary']||'—'}</td>
+    </tr>`).join('');
+}
+
+function resetUpload() {
+  candidates = [];
+  document.getElementById('uploadFeedback').innerHTML = '';
+  document.getElementById('candTableWrap').style.display = 'none';
+  document.getElementById('toStep2Btn').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  renderSidebar();
+}
+
+function renderSidebar() {
+  const el = document.getElementById('sidebarCands');
+  const badge = document.getElementById('sidebarCount');
+  if (!candidates.length) {
+    badge.style.display = 'none';
+    el.innerHTML = '<div class="sidebar-empty"><i class="fas fa-users"></i>Upload an Excel file to see candidates here</div>';
     return;
   }
-  c.innerHTML = uploadedCandidates.map((r,i) => `
-    <div class="cand-item" onclick="sidebarJumpToPreview(${i})">
-      <div class="cand-item-name">${r['Name'] || '—'}</div>
-      <div class="cand-item-role">${r['Role'] || '—'}</div>
+  badge.style.display = 'inline-block';
+  badge.textContent = candidates.length;
+  el.innerHTML = candidates.map((r,i) => `
+    <div class="cand-pill" id="sp_${i}" onclick="sidebarClick(${i})">
+      <div class="cand-avatar">${(r['Name']||'?').charAt(0).toUpperCase()}</div>
+      <div style="min-width:0">
+        <div class="cand-pill-name">${r['Name']||'—'}</div>
+        <div class="cand-pill-role">${r['Role']||'—'}</div>
+      </div>
     </div>`).join('');
 }
 
-function sidebarJumpToPreview(idx) {
-  if (!uploadedCandidates.length) return;
+function sidebarClick(idx) {
   goStep(4);
-  // After DOM update, click the right candidate row
-  setTimeout(() => {
-    const items = document.querySelectorAll('.preview-cand-item');
-    if (items[idx]) items[idx].click();
-  }, 120);
+  setTimeout(() => previewLetter(idx), 150);
 }
 
-// ── Step 2: Employment Type ───────────────────────────────────────────────────
+/* ── Step 2: Employment Type ─────────────────────────────────────── */
 function selectEmp(type, el) {
   empType = type;
   document.querySelectorAll('.emp-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
 }
 
-// ── Step 3: Pattern ───────────────────────────────────────────────────────────
+/* ── Step 3: Patterns ────────────────────────────────────────────── */
 async function loadPatterns() {
-  // Only fetch once
-  if (patternsData.length) { renderPatternCards(); return; }
+  if (patternsData.length) { renderPatterns(); return; }
   try {
     const r = await fetch('/api/patterns');
     patternsData = await r.json();
   } catch(e) {
-    // Fallback hardcoded list if fetch fails
     patternsData = [
-      {key:'classic',  label:'Classic',   desc:'Centred header, blue-accented table. Traditional corporate style.', accent:'#0d1b3e', is_custom:false},
-      {key:'modern',   label:'Modern',    desc:'Left-aligned purple header with two-column detail cards.',          accent:'#6d28d9', is_custom:false},
-      {key:'minimal',  label:'Minimal',   desc:'Light grey tones, no heavy borders — ideal for creative roles.',    accent:'#374151', is_custom:false},
-      {key:'executive',label:'Executive', desc:'Dark red, formal letter with reference number & signature block.',  accent:'#7f1d1d', is_custom:false},
-      {key:'custom',   label:'Custom',    desc:'Write your own offer letter content in a text area below.',         accent:'#b45309', is_custom:true},
+      {key:'classic',   label:'Classic',   desc:'Traditional corporate style with centred header and blue table.',    accent:'#0d1b3e', is_custom:false},
+      {key:'modern',    label:'Modern',    desc:'Clean layout with purple palette and two-column detail cards.',      accent:'#6d28d9', is_custom:false},
+      {key:'minimal',   label:'Minimal',   desc:'Light and airy grey tones, ideal for creative industries.',          accent:'#374151', is_custom:false},
+      {key:'executive', label:'Executive', desc:'Premium dark-red executive format with formal letter structure.',     accent:'#7f1d1d', is_custom:false},
+      {key:'custom',    label:'Custom',    desc:'Write your own letter content using the editor below.',              accent:'#b45309', is_custom:true},
     ];
   }
-  renderPatternCards();
+  renderPatterns();
 }
 
-function renderPatternCards() {
-  const grid = document.getElementById('patternGrid');
-  grid.innerHTML = patternsData.map(p => {
-    const isCustom = p.is_custom;
-    const isSelected = p.key === selPattern;
-    return `
-    <div class="pattern-card ${isSelected?'selected':''}"
-         id="pc_${p.key}"
-         onclick="selectPattern('${p.key}')"
-         style="--pat-accent:${p.accent||'#0d1b3e'}">
-      <i class="pattern-check fas fa-check-circle"></i>
-      ${isCustom ? '<span class="pattern-custom-badge"><i class="fas fa-pen" style="font-size:.6rem"></i> Custom</span>' : ''}
-      <div class="pattern-swatch" style="background:${p.accent||'#0d1b3e'}">
-        ${isCustom ? '✏' : p.label.charAt(0)}
+function renderPatterns() {
+  document.getElementById('patternGrid').innerHTML = patternsData.map(p => `
+    <div class="pat-card ${p.key===selPattern?'selected':''}"
+         id="pc_${p.key}" onclick="selectPattern('${p.key}')"
+         style="--pat-col:${p.accent||'#0d1b3e'}">
+      <div class="pat-check"><i class="fas fa-check"></i></div>
+      ${p.is_custom?'<div class="custom-badge"><i class="fas fa-pen" style="font-size:.55rem"></i> Custom</div>':''}
+      <div class="pat-swatch" style="background:${p.accent||'#0d1b3e'}">
+        ${p.is_custom ? '✏' : p.label.charAt(0)}
       </div>
-      <h4>${p.label}</h4>
-      <p>${p.desc}</p>
-    </div>`;
-  }).join('');
-
-  // Show/hide custom block for current selection
+      <div class="pat-name">${p.label}</div>
+      <div class="pat-desc">${p.desc}</div>
+    </div>`).join('');
   toggleCustomBlock();
 }
 
 function selectPattern(key) {
   selPattern = key;
-  document.querySelectorAll('.pattern-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.pat-card').forEach(c => c.classList.remove('selected'));
   const card = document.getElementById('pc_'+key);
   if (card) card.classList.add('selected');
   toggleCustomBlock();
 }
 
 function toggleCustomBlock() {
-  const block = document.getElementById('customTextBlock');
-  if (!block) return;
+  const b = document.getElementById('customBlock');
+  if (!b) return;
   if (selPattern === 'custom') {
-    block.style.display = 'block';
-    // Smooth scroll to it
-    setTimeout(() => block.scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
+    b.style.display = 'block';
+    setTimeout(() => b.scrollIntoView({behavior:'smooth',block:'nearest'}), 60);
   } else {
-    block.style.display = 'none';
+    b.style.display = 'none';
   }
 }
 
-// Insert placeholder at cursor position in custom textarea
-function insertPlaceholder(tag) {
+function insertPH(tag) {
   const ta = document.getElementById('customText');
-  const start = ta.selectionStart;
-  const end   = ta.selectionEnd;
-  const val   = ta.value;
-  ta.value = val.substring(0,start) + tag + val.substring(end);
-  ta.selectionStart = ta.selectionEnd = start + tag.length;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.substring(0,s)+tag+ta.value.substring(e);
+  ta.selectionStart = ta.selectionEnd = s+tag.length;
   ta.focus();
 }
 
-// ── Step 4: Preview & Send ────────────────────────────────────────────────────
-function enterPreviewStep() {
-  // Summary pills
-  const patObj = patternsData.find(p => p.key===selPattern) || {label:'Classic', accent:'#0d1b3e'};
-  const empLabel = {full_time:'Full Time', part_time:'Part Time', internship:'Internship'}[empType] || empType;
-  document.getElementById('selectionSummary').innerHTML = `
-    <span style="display:inline-flex;align-items:center;gap:6px;background:#f0f4ff;
-                 color:var(--blue);padding:5px 12px;border-radius:20px;font-size:.8rem;font-weight:600">
-      <i class="fas fa-layer-group"></i> ${patObj.label} Pattern
-    </span>
-    <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;
-                 color:var(--green);padding:5px 12px;border-radius:20px;font-size:.8rem;font-weight:600">
-      <i class="fas fa-briefcase"></i> ${empLabel}
-    </span>
-    <span style="display:inline-flex;align-items:center;gap:6px;background:#fafafa;
-                 color:var(--muted);padding:5px 12px;border-radius:20px;font-size:.8rem;font-weight:600">
-      <i class="fas fa-users"></i> ${uploadedCandidates.length} candidate${uploadedCandidates.length!==1?'s':''}
-    </span>`;
+function getCustomText() {
+  return selPattern==='custom' ? (document.getElementById('customText').value||'') : '';
+}
 
-  // Candidate count badge
-  document.getElementById('candCount').textContent = `(${uploadedCandidates.length})`;
+/* ── Step 4: Preview & Send ──────────────────────────────────────── */
+function buildPreviewStep() {
+  const pat = patternsData.find(p=>p.key===selPattern)||{label:'Classic'};
+  const empLabel = {full_time:'Full Time',part_time:'Part Time',internship:'Internship'}[empType]||empType;
 
-  // Render candidate list
-  const list = document.getElementById('previewCandList');
-  list.innerHTML = uploadedCandidates.map((r,i) => `
-    <div class="preview-cand-item" id="pci_${i}" onclick="previewLetter(${i})">
-      ${r['Name'] || '—'}
+  document.getElementById('summaryPills').innerHTML = `
+    <span class="sum-pill blue"><i class="fas fa-layer-group"></i> ${pat.label} Template</span>
+    <span class="sum-pill green"><i class="fas fa-briefcase"></i> ${empLabel}</span>
+    <span class="sum-pill slate"><i class="fas fa-users"></i> ${candidates.length} candidate${candidates.length!==1?'s':''}</span>`;
+
+  document.getElementById('previewCount').textContent = `${candidates.length} total`;
+
+  document.getElementById('previewCandList').innerHTML = candidates.map((r,i) => `
+    <div class="preview-cand-row" id="pcr_${i}" onclick="previewLetter(${i})">
+      <div class="pcr-name">${r['Name']||'—'}</div>
+      <div class="pcr-role">${r['Role']||'—'}</div>
     </div>`).join('');
 
-  // Auto-preview first candidate
-  if (uploadedCandidates.length) {
-    setTimeout(() => previewLetter(0), 80);
-  }
+  if (candidates.length) setTimeout(() => previewLetter(0), 100);
 }
 
 async function previewLetter(idx) {
-  // Highlight active row
-  document.querySelectorAll('.preview-cand-item').forEach(c => c.classList.remove('active'));
-  const activeEl = document.getElementById('pci_'+idx);
-  if (activeEl) activeEl.classList.add('active');
+  document.querySelectorAll('.preview-cand-row').forEach(r=>r.classList.remove('active'));
+  const row = document.getElementById('pcr_'+idx);
+  if (row) row.classList.add('active');
 
-  const c = uploadedCandidates[idx];
+  // Also highlight sidebar pill
+  document.querySelectorAll('.cand-pill').forEach(p=>p.classList.remove('active'));
+  const sp = document.getElementById('sp_'+idx);
+  if (sp) sp.classList.add('active');
+
   const pane = document.getElementById('previewPane');
-
-  // Show spinner
   pane.innerHTML = `
-    <div class="preview-loading">
-      <div class="preview-spinner"></div>
-      <div>Generating preview…</div>
+    <div style="text-align:center;padding:60px 0;color:var(--muted)">
+      <div class="preview-spin" style="margin:0 auto 12px"></div>
+      <div style="font-size:.82rem">Generating preview…</div>
     </div>`;
 
+  const c = candidates[idx];
   try {
-    const payload = {
-      candidate:       { ...c, name: c['Name']||'', email: c['Gmail id']||'',
-                         role: c['Role']||'', joining_date: c['Joining date']||'',
-                         salary: c['Salary']||'' },
-      employment_type: empType,
-      pattern:         selPattern,
-      custom_text:     getCustomText(),
-    };
-
-    const r = await fetch('/api/preview-letter', {
-      method:  'POST',
-      headers: {'Content-Type':'application/json'},
-      body:    JSON.stringify(payload),
+    const res = await fetch('/api/preview-letter', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        candidate:       { ...c, name:c['Name']||'', email:c['Gmail id']||'',
+                           role:c['Role']||'', joining_date:c['Joining date']||'',
+                           salary:c['Salary']||'' },
+        employment_type: empType,
+        pattern:         selPattern,
+        custom_text:     getCustomText(),
+      }),
     });
-    const d = await r.json();
-
-    if (d.success && d.html) {
-      pane.innerHTML = d.html;
-    } else {
-      pane.innerHTML = '<div style="color:red;padding:20px">Preview failed. Please try again.</div>';
-    }
+    const d = await res.json();
+    pane.innerHTML = d.success && d.html
+      ? d.html
+      : '<div style="color:var(--red);padding:20px;font-size:.84rem">Preview failed — please try again.</div>';
   } catch(e) {
-    pane.innerHTML = '<div style="color:red;padding:20px">Network error loading preview.</div>';
+    pane.innerHTML = '<div style="color:var(--red);padding:20px;font-size:.84rem">Network error loading preview.</div>';
   }
 }
 
-function getCustomText() {
-  if (selPattern !== 'custom') return '';
-  return document.getElementById('customText').value || '';
-}
-
-// ── Save & Send ───────────────────────────────────────────────────────────────
+/* ── Save & Send ─────────────────────────────────────────────────── */
 async function saveAndSend() {
-  if (!uploadedCandidates.length) { showToast('No candidates loaded', 'error'); return; }
-
+  if (!candidates.length) { showToast('No candidates loaded', 'error'); return; }
   const btn = document.getElementById('sendBtn');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
-  showLoading();
+  btn.innerHTML = '<div class="preview-spin" style="width:16px;height:16px;border-width:2px"></div> Saving…';
+  showLoader('Saving candidates…');
 
-  // 1. Save candidates (with pattern + custom_text)
-  const saveRes = await fetch('/api/save-candidates', {
-    method:  'POST',
-    headers: {'Content-Type':'application/json'},
-    body:    JSON.stringify({
-      candidates:      uploadedCandidates,
-      employment_type: empType,
-      pattern:         selPattern,
-      custom_text:     getCustomText(),
+  const saveRes  = await fetch('/api/save-candidates', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      candidates, employment_type:empType,
+      pattern:selPattern, custom_text:getCustomText(),
     }),
   });
   const saveData = await saveRes.json();
 
   if (!saveData.success) {
-    hideLoading();
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Save & Send All Emails';
-    showToast('Error saving candidates', 'error');
-    return;
+    hideLoader();
+    btn.disabled=false;
+    btn.innerHTML='<i class="fas fa-paper-plane"></i> Send All Offer Emails';
+    showToast('Error saving candidates', 'error'); return;
   }
 
-  // 2. Send emails using the IDs returned from save
-  const candidateIds = saveData.candidate_ids || [];
-  if (!candidateIds.length) {
-    hideLoading();
+  const ids = saveData.candidate_ids || [];
+  if (!ids.length) {
+    hideLoader();
     showToast('No new candidates to send', 'warning');
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Save & Send All Emails';
-    return;
+    btn.disabled=false;
+    btn.innerHTML='<i class="fas fa-paper-plane"></i> Send All Offer Emails'; return;
   }
 
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending emails…';
+  document.getElementById('loaderMsg').textContent = `Sending ${ids.length} offer email${ids.length!==1?'s':''}…`;
 
-  const sendRes = await fetch('/api/send-offer-emails', {
-    method:  'POST',
-    headers: {'Content-Type':'application/json'},
-    body:    JSON.stringify({ candidate_ids: candidateIds }),
+  const sendRes  = await fetch('/api/send-offer-emails', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ candidate_ids:ids }),
   });
   const sendData = await sendRes.json();
-  hideLoading();
+  hideLoader();
 
   if (sendData.success) {
-    showToast(`✅ Offer emails sent to ${sendData.sent} candidate${sendData.sent!==1?'s':''}!`);
-    setTimeout(() => location.href = '/dashboard', 1800);
+    const failed = sendData.failed?.length || 0;
+    if (failed > 0) {
+      showToast(`Sent ${sendData.sent} emails. ${failed} failed — check email history.`, 'warning');
+    } else {
+      showToast(`✅ ${sendData.sent} offer email${sendData.sent!==1?'s':''} sent successfully!`, 'success');
+    }
+    setTimeout(() => location.href='/dashboard', 2000);
   } else {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Save & Send All Emails';
+    btn.disabled=false;
+    btn.innerHTML='<i class="fas fa-paper-plane"></i> Send All Offer Emails';
     showToast('Error sending emails', 'error');
   }
 }
+
+/* ── Utilities ───────────────────────────────────────────────────── */
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  const el = document.createElement('div');
+  el.className = `toast-msg ${type}`;
+  const icons = {success:'fa-check-circle',error:'fa-circle-xmark',warning:'fa-triangle-exclamation'};
+  el.innerHTML = `<i class="fas ${icons[type]||'fa-info-circle'}"></i> ${msg}`;
+  t.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(20px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); }, 3800);
+}
+
+function showLoader(msg='Processing…') {
+  document.getElementById('loaderMsg').textContent = msg;
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoader() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
 </script>
-{% endblock %}
+</body>
+</html>
