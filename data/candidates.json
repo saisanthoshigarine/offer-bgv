@@ -380,5 +380,40 @@
     "extra": {
       "Status": "Selected "
     }
+  },
+  "b31daf4d-e0b7-4a45-8e0c-b992dcf6c6a8": {
+    "id": "b31daf4d-e0b7-4a45-8e0c-b992dcf6c6a8",
+    "hr_id": "3d6baef9-f83b-4b72-af4a-c4aaa50139a8",
+    "name": "Sai Santhoshi ",
+    "email": "saisanthoshig.10@gmail.com",
+    "role": "AI Engineer ",
+    "joining_date": "Sat, 31 Jan 2026 00:00:00 GMT",
+    "salary": "100000",
+    "employment_type": "full_time",
+    "pattern": "classic",
+    "custom_text": "",
+    "offer_status": "pending",
+    "sent_at": "2026-06-05 12:24:26.708821",
+    "extra": {
+      "Status": "Selected "
+    }
+  },
+  "cfb07af8-d352-42f9-b0ab-67174be4045f": {
+    "id": "cfb07af8-d352-42f9-b0ab-67174be4045f",
+    "hr_id": "3d6baef9-f83b-4b72-af4a-c4aaa50139a8",
+    "name": "Sai Santhoshi ",
+    "email": "saisanthoshig.10@gmail.com",
+    "role": "AI Engineer ",
+    "joining_date": "Sat, 31 Jan 2026 00:00:00 GMT",
+    "salary": "100000",
+    "employment_type": "full_time",
+    "pattern": "classic",
+    "custom_text": "",
+    "offer_status": "pending",
+    "sent_at": "2026-06-05 12:32:16.117416",
+    "extra": {
+      "Status": "Selected "
+    },
+    "email_sent_at": "2026-06-05 12:32:20.845044"
   }
 }

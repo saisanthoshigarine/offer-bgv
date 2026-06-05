@@ -614,209 +614,188 @@ def letterhead_preview_html(hr_user, candidate, pattern_key='classic', custom_te
     email    = candidate.get('email', '')
     pat      = PATTERNS.get(pattern_key, PATTERNS['classic'])
 
-    accent  = pat.get('accent',  '#0d1b3e')
-    accent2 = pat.get('accent2', '#1a56db')
+    accent   = pat.get('accent',  '#0d1b3e')
+    accent2  = pat.get('accent2', '#1a56db')
+    row_even = pat.get('row_even', '#f0f4ff')
+    layout   = pat.get('layout', 'classic')
 
-    # ── Letterhead background block ───────────────────────────────────────────
-    lh_bg_style = ''
-    lh_notice   = ''
+    # ── Encode letterhead PDF as base64 (no poppler needed) ──────────────────
+    lh_b64 = None
     if lh_path and os.path.exists(lh_path):
         try:
-            from pdf2image import convert_from_path
-            import tempfile
-            imgs = convert_from_path(lh_path, first_page=1, last_page=1, dpi=96)
-            if imgs:
-                tmp = tempfile.mktemp(suffix='.png')
-                imgs[0].save(tmp, 'PNG')
-                with open(tmp, 'rb') as f:
-                    b64img = base64.b64encode(f.read()).decode()
-                os.unlink(tmp)
-                lh_bg_style = (
-                    f'background-image:url("data:image/png;base64,{b64img}");'
-                    f'background-size:100% 100%;background-repeat:no-repeat;'
-                )
-                lh_notice = (
-                    '<div style="background:#fff8e1;border:1px solid #f59e0b;'
-                    'border-radius:6px;padding:7px 14px;margin-bottom:12px;'
-                    'font-size:11px;color:#92400e;font-family:Arial,sans-serif">'
-                    '📄 <b>Letterhead Preview</b> — the offer letter PDF will '
-                    'be sent with this letterhead as background.</div>'
-                )
-        except Exception:
             with open(lh_path, 'rb') as f:
-                b64 = base64.b64encode(f.read()).decode()
-            lh_notice = (
-                f'<div style="margin-bottom:12px">'
-                f'<div style="background:#fff8e1;border:1px solid #f59e0b;'
-                f'border-radius:6px;padding:7px 14px;margin-bottom:8px;'
-                f'font-size:11px;color:#92400e">📄 Letterhead attached to email.</div>'
-                f'<iframe src="data:application/pdf;base64,{b64}" '
-                f'width="100%" height="140" style="border:1px solid #e2e8f0;'
-                f'border-radius:6px"></iframe></div>'
+                lh_b64 = base64.b64encode(f.read()).decode()
+        except Exception as e:
+            logger.warning(f'Letterhead read failed: {e}')
+
+    # ── Detail table ──────────────────────────────────────────────────────────
+    detail_rows = [
+        ('Candidate Name',     name),
+        ('Designation / Role', role),
+        ('Joining Date',       joining),
+        ('Annual CTC',         f'&#8377; {salary}'),
+        ('Employment Type',    emp_type),
+        ('Reporting Location', 'As communicated by HR'),
+    ]
+
+    def html_table(rows):
+        trs = ''
+        for i, (k, v) in enumerate(rows):
+            bg = row_even if i % 2 == 0 else '#ffffff'
+            trs += (
+                f'<tr style="background:{bg}">'
+                f'<td style="padding:6px 10px;font-weight:700;color:{accent2};'
+                f'font-size:10.5px;width:40%;border:1px solid #e2e8f0;'
+                f'font-family:Arial,sans-serif">{k}</td>'
+                f'<td style="padding:6px 10px;color:#1e293b;font-size:10.5px;'
+                f'border:1px solid #e2e8f0;font-family:Arial,sans-serif">{v}</td>'
+                f'</tr>'
             )
+        return (
+            f'<table style="width:100%;border-collapse:collapse;margin:8px 0 12px">'
+            f'{trs}</table>'
+        )
 
-    # ── Pattern badge ─────────────────────────────────────────────────────────
-    pat_badge = (
-        f'<span style="display:inline-block;background:{accent};color:#fff;'
-        f'font-size:10px;padding:2px 10px;border-radius:12px;'
-        f'font-family:Arial,sans-serif;margin-bottom:14px">'
-        f'{pat["label"]} Template</span>'
-    )
-
-    # ── Content varies by pattern ─────────────────────────────────────────────
-    layout = pat.get('layout', 'classic')
-    rows   = ''.join(
-        f'<tr style="background:{"#f0f4ff" if i%2==0 else "#fff"}">'
-        f'<td style="padding:9px 14px;font-weight:700;color:{accent2};'
-        f'font-size:11.5px;width:42%;border:1px solid #e2e8f0">{k}</td>'
-        f'<td style="padding:9px 14px;color:#1e293b;font-size:11.5px;'
-        f'border:1px solid #e2e8f0">{v}</td></tr>'
-        for i, (k, v) in enumerate([
-            ('Candidate Name', name), ('Designation / Role', role),
-            ('Joining Date', joining), ('Annual CTC', f'₹ {salary}'),
-            ('Employment Type', emp_type), ('Reporting Location', 'As communicated by HR'),
-        ])
-    )
-
+    # ── Per-layout content ────────────────────────────────────────────────────
     if layout == 'custom':
-        inner_html = f'''
-<div style="font-family:Georgia,serif;font-size:12px;
-            color:#1e293b;line-height:1.9;white-space:pre-wrap;padding:10px 0">
-{custom_text or "(Your custom offer letter content will appear here.)"}
-</div>'''
+        content_html = f'''<div style="font-family:Georgia,serif;font-size:11px;color:#1e293b;line-height:1.85;white-space:pre-wrap">{custom_text or "(Your custom offer letter content will appear here.)"}</div>'''
 
     elif layout == 'modern':
-        kv_cards = ''.join(
-            f'<div style="background:#f5f3ff;border:1px solid #ede9fe;'
-            f'border-radius:6px;padding:10px 14px;margin:4px">'
-            f'<div style="font-size:9px;font-weight:700;color:{accent2};'
-            f'text-transform:uppercase;letter-spacing:.5px">{k}</div>'
-            f'<div style="font-size:12px;color:#1e293b;margin-top:2px">{v}</div>'
-            f'</div>'
-            for k, v in [
-                ('Role', role), ('Joining Date', joining),
-                ('Annual CTC', f'₹ {salary}'), ('Employment Type', emp_type),
-                ('Company', company), ('Location', 'As communicated by HR'),
-            ]
-        )
-        inner_html = f'''
-<div style="background:{accent};padding:18px 20px;border-radius:8px 8px 0 0;
-            display:flex;justify-content:space-between;align-items:center">
-  <span style="font-family:Arial;font-size:18px;font-weight:900;color:#fff">{company}</span>
-  <span style="font-size:10px;color:rgba(255,255,255,.6)">{today}</span>
+        cards = ''
+        for k, v in [('Role', role), ('Joining Date', joining),
+                     ('Annual CTC', f'&#8377; {salary}'), ('Employment Type', emp_type),
+                     ('Company', company), ('Location', 'As communicated by HR')]:
+            cards += (
+                f'<div style="background:#f5f3ff;border:1px solid #ede9fe;border-radius:4px;'
+                f'padding:7px 10px;flex:1;min-width:120px">'
+                f'<div style="font-size:7.5px;font-weight:700;color:{accent2};text-transform:uppercase;'
+                f'letter-spacing:.4px;font-family:Arial">{k}</div>'
+                f'<div style="font-size:10px;color:#1e293b;margin-top:2px;font-family:Arial">{v}</div></div>'
+            )
+        content_html = f'''
+<div style="background:{accent};padding:10px 14px;border-radius:4px 4px 0 0;display:flex;justify-content:space-between;align-items:center">
+  <span style="font-family:Arial;font-size:14px;font-weight:900;color:#fff">{company}</span>
+  <span style="font-size:8.5px;color:rgba(255,255,255,.65);font-family:Arial">{today}</span>
 </div>
-<div style="padding:18px 20px">
-  <p style="font-family:Arial;font-size:12px;color:#1e293b;margin:0 0 10px">
-    Dear <b>{name}</b>, we are pleased to offer you <b>{role}</b> at <b>{company}</b>.
-  </p>
-  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
-    {kv_cards}
-  </div>
-  <p style="font-family:Arial;font-size:11px;color:#6b7280;margin:0 0 14px">
-    • Background verification required &nbsp;• Documents to be submitted before joining
-  </p>
-  <div style="border-top:1px solid #ede9fe;padding-top:12px;
-              font-family:Arial;font-size:11.5px;color:#1e293b">
-    Sincerely, <b>{company} HR Team</b>
-  </div>
+<div style="border:1px solid {accent};border-top:none;border-radius:0 0 4px 4px;padding:12px 14px;margin-bottom:10px">
+  <p style="font-family:Arial;font-size:10.5px;color:#1e293b;margin:0 0 8px;line-height:1.7">Dear <b>{name}</b>, we are pleased to offer you <b>{role}</b> at <b>{company}</b>.</p>
+  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">{cards}</div>
+  <p style="font-family:Arial;font-size:10px;color:#6b7280;margin:0 0 10px;line-height:1.7">&bull; Background verification required &nbsp;&bull; Documents required before joining</p>
+  <div style="border-top:1px solid {accent2};padding-top:8px;font-family:Arial;font-size:10.5px;color:#1e293b">Sincerely,<br><b style="color:{accent}">{company} &mdash; HR Team</b></div>
 </div>'''
 
     elif layout == 'minimal':
-        inner_html = f'''
-<div style="padding:10px 0">
-  <div style="font-family:Arial;font-size:15px;color:{accent};font-weight:400;
-              margin-bottom:2px">{company}</div>
-  <div style="font-family:Arial;font-size:9px;color:#9ca3af;margin-bottom:16px">
-    Human Resources</div>
-  <div style="height:2px;background:{accent2};width:60px;margin-bottom:16px"></div>
-  <div style="font-family:Arial;font-size:13px;color:{accent};margin-bottom:4px">
-    Offer of Employment</div>
-  <div style="font-family:Arial;font-size:9px;color:#9ca3af;margin-bottom:18px">{today}</div>
-  <p style="font-family:Georgia;font-size:12px;color:#1e293b;line-height:1.9">
-    Dear {name},<br>We are pleased to offer you the role of {role} at {company}.
-  </p>
-  <table style="width:100%;border-collapse:collapse;margin:14px 0;font-size:11.5px">{rows}</table>
-  <p style="font-family:Georgia;font-size:11px;color:#6b7280;margin:0 0 18px">
-    This offer is subject to background verification and document submission.
-  </p>
-  <div style="font-family:Arial;font-size:11.5px;color:#1e293b">{company} HR</div>
-</div>'''
+        content_html = f'''
+<div style="font-family:Arial;font-size:13px;color:{accent};margin-bottom:1px">{company}</div>
+<div style="font-family:Arial;font-size:8px;color:#9ca3af;margin-bottom:12px">Human Resources</div>
+<div style="height:1.5px;background:{accent2};width:40px;margin-bottom:12px"></div>
+<div style="font-family:Arial;font-size:11.5px;color:{accent};margin-bottom:2px">Offer of Employment</div>
+<div style="font-family:Arial;font-size:8px;color:#9ca3af;margin-bottom:14px">{today}</div>
+<p style="font-family:Georgia;font-size:11px;color:#1e293b;line-height:1.85;margin:0 0 8px">Dear {name},<br>We are pleased to offer you the role of <b>{role}</b> at <b>{company}</b>.</p>
+{html_table(detail_rows)}
+<p style="font-family:Georgia;font-size:10px;color:#6b7280;margin:0 0 14px;line-height:1.75">This offer is subject to background verification and document submission.</p>
+<div style="font-family:Arial;font-size:10.5px;color:#1e293b">Regards,<br><b style="color:{accent}">{company} HR</b></div>'''
 
     elif layout == 'executive':
-        inner_html = f'''
-<div style="text-align:center;font-family:Arial;margin-bottom:10px">
-  <div style="font-size:20px;font-weight:900;color:{accent};
-              letter-spacing:2px">{company.upper()}</div>
-  <div style="font-size:8px;color:#9ca3af;letter-spacing:1px">
-    PRIVATE &amp; CONFIDENTIAL</div>
+        content_html = f'''
+<div style="text-align:center;font-family:Arial;margin-bottom:8px">
+  <div style="font-size:16px;font-weight:900;color:{accent};letter-spacing:1.5px">{company.upper()}</div>
+  <div style="font-size:7px;color:#9ca3af;letter-spacing:1px">PRIVATE &amp; CONFIDENTIAL</div>
 </div>
-<div style="height:3px;background:{accent};margin-bottom:2px"></div>
-<div style="height:1px;background:{accent2};margin-bottom:16px"></div>
-<div style="font-family:Arial;font-size:10px;color:#6b7280;margin-bottom:4px">
-  Date: {today} &nbsp;|&nbsp; Ref: OF-PREVIEW</div>
-<p style="font-family:Georgia;font-size:12px;color:#1e293b;line-height:1.9;margin:12px 0">
-  Dear <b>{name}</b>,<br><br>
-  On behalf of the Board and Management of <b>{company}</b>, it is our honour
-  to extend this formal Offer of Employment for the position of <b>{role}</b>.
-</p>
-<table style="width:100%;border-collapse:collapse;margin:10px 0;font-size:11.5px">{rows}</table>
-<p style="font-family:Georgia;font-size:11.5px;color:#1e293b;line-height:1.9;margin:14px 0 10px">
-  <b>Conditions Precedent:</b><br>
-  1. Background and reference verification.<br>
-  2. Submission of original documents.<br>
-  3. Execution of Employment Agreement.
-</p>
-<div style="border-top:1px solid #e2e8f0;padding-top:14px;font-family:Arial;
-            font-size:11.5px;color:#1e293b;margin-top:14px">
-  Yours sincerely,<br><br>
-  <span style="font-size:13px;color:{accent}">___________________________</span><br>
-  <b>Authorised Signatory</b><br>{company}
-</div>'''
+<div style="height:2.5px;background:{accent};margin-bottom:1.5px"></div>
+<div style="height:1px;background:{accent2};margin-bottom:12px"></div>
+<div style="font-family:Arial;font-size:9px;color:#6b7280;margin-bottom:3px">Date: {today} &nbsp;|&nbsp; Ref: OF-PREVIEW</div>
+<p style="font-family:Georgia;font-size:11px;color:#1e293b;line-height:1.85;margin:8px 0">Dear <b>{name}</b>,<br><br>On behalf of the Board and Management of <b>{company}</b>, it is our honour to extend this formal Offer of Employment for the position of <b>{role}</b>.</p>
+<div style="font-family:Arial;font-size:10px;font-weight:700;color:{accent};margin-bottom:5px">Terms of the Offer</div>
+{html_table(detail_rows)}
+<div style="font-family:Arial;font-size:10px;font-weight:700;color:{accent};margin:10px 0 5px">Conditions Precedent</div>
+<p style="font-family:Georgia;font-size:10.5px;color:#1e293b;line-height:1.85;margin:0 0 10px">1. Background and reference verification.<br>2. Production of original documents.<br>3. Execution of Employment Agreement and NDA.</p>
+<div style="border-top:1px solid #e2e8f0;padding-top:10px;font-family:Arial;font-size:10.5px;color:#1e293b">Yours sincerely,<br><br><span style="color:#9ca3af">_______________________________</span><br><b>Authorised Signatory</b><br><span style="color:{accent}">{company}</span></div>'''
 
-    else:  # classic (default)
-        inner_html = f'''
-<div style="text-align:center;margin-bottom:18px">
-  <div style="font-family:Arial;font-size:20px;font-weight:900;color:{accent}">{company}</div>
-  <div style="font-size:10px;color:#64748b;margin-top:3px">Human Resources Department</div>
-  <div style="height:3px;background:linear-gradient(90deg,{accent},{accent2});
-              width:70px;margin:8px auto 0;border-radius:2px"></div>
+    else:  # classic
+        content_html = f'''
+<div style="text-align:center;margin-bottom:12px">
+  <div style="font-family:Arial;font-size:17px;font-weight:900;color:{accent}">{company}</div>
+  <div style="font-size:9px;color:#64748b;margin-top:2px;font-family:Arial">Human Resources Department</div>
+  <div style="height:2px;background:linear-gradient(90deg,{accent},{accent2});width:50px;margin:6px auto 0;border-radius:2px"></div>
 </div>
-<div style="text-align:center;font-size:16px;font-weight:700;color:{accent};
-            margin-bottom:14px;border-bottom:1.5px solid #e2e8f0;padding-bottom:12px">
-  OFFER OF EMPLOYMENT
-</div>
-<div style="font-size:10px;color:#64748b;margin-bottom:10px">Date: {today}</div>
-<p style="font-family:Georgia;font-size:13px;color:#1e293b;margin-bottom:8px">
-  Dear <b>{name}</b>,</p>
-<p style="font-family:Georgia;font-size:12px;color:#475569;line-height:1.9;margin-bottom:12px">
-  We are delighted to extend this offer for the position of
-  <b style="color:{accent2}">{role}</b> at <b>{company}</b>.
-</p>
-<table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:11.5px">{rows}</table>
-<ul style="font-size:11.5px;color:#475569;line-height:2;margin-left:18px;margin-bottom:14px">
+<div style="text-align:center;font-size:12.5px;font-weight:700;color:{accent};margin-bottom:10px;border-bottom:1.5px solid #e2e8f0;padding-bottom:8px;font-family:Arial">OFFER OF EMPLOYMENT</div>
+<div style="font-size:9px;color:#64748b;margin-bottom:8px;font-family:Arial">Date: {today}</div>
+<p style="font-family:Georgia;font-size:11.5px;color:#1e293b;margin:0 0 6px">Dear <b>{name}</b>,</p>
+<p style="font-family:Georgia;font-size:11px;color:#475569;line-height:1.85;margin:0 0 8px">We are delighted to extend this offer for the position of <b style="color:{accent2}">{role}</b> at <b>{company}</b>. We believe your skills are an excellent fit for our team.</p>
+<div style="font-family:Arial;font-size:10px;font-weight:700;color:{accent};margin-bottom:4px">Your offer details:</div>
+{html_table(detail_rows)}
+<div style="font-family:Arial;font-size:10px;font-weight:700;color:{accent};margin-bottom:4px">This offer is contingent upon:</div>
+<ul style="font-size:10.5px;color:#475569;line-height:1.9;margin:0 0 10px;padding-left:16px;font-family:Georgia">
   <li>Successful completion of background verification.</li>
   <li>Submission of all required documents before joining.</li>
-  <li>Acceptance of the company's Code of Conduct.</li>
+  <li>Acceptance of the company&apos;s Code of Conduct.</li>
 </ul>
-<div style="border-top:1px solid #e2e8f0;padding-top:14px;font-family:Arial;font-size:11.5px">
-  Warm regards,<br><b style="color:{accent}">HR Department — {company}</b>
-</div>'''
+<p style="font-family:Georgia;font-size:11px;color:#1e293b;line-height:1.75;margin:0 0 14px">Please accept via the <b>Accept Offer</b> button in your email.</p>
+<div style="border-top:1px solid #e2e8f0;padding-top:10px;font-family:Arial;font-size:10.5px;color:#1e293b">Warm regards,<br><b style="color:{accent}">HR Department &mdash; {company}</b></div>'''
+
+    pat_badge = (
+        f'<span style="display:inline-block;background:{accent};color:#fff;'
+        f'font-size:9px;padding:1px 8px;border-radius:10px;font-family:Arial;'
+        f'margin-bottom:8px">{pat["label"]} Template</span>'
+    )
+
+    # ── Letterhead layer ──────────────────────────────────────────────────────
+    # We use an <img> rendered via a canvas trick via JS, OR simply a CSS
+    # background using object-fit on an <iframe>.
+    # Best cross-browser approach on Windows: render letterhead in an <iframe>
+    # with scrolling/UI disabled, scaled to fill the box exactly.
+    # The content div sits on top via z-index.
+
+    if lh_b64:
+        lh_layer = f'''
+    <!-- Letterhead: full-page iframe, no scrollbar, no controls -->
+    <iframe
+      src="data:application/pdf;base64,{lh_b64}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
+      style="position:absolute;top:0;left:0;width:100%;height:100%;
+             border:none;display:block;z-index:1;"
+      scrolling="no"
+    ></iframe>'''
+        # Content sits in the empty body zone of the letterhead
+        # top 19% ≈ header band, bottom 12% ≈ footer band
+        content_style = (
+            'position:absolute;z-index:2;'
+            'top:19%;left:7.5%;right:7.5%;bottom:12%;'
+            'overflow:hidden;'
+        )
+    else:
+        lh_layer = ''
+        content_style = (
+            'position:absolute;z-index:2;'
+            'top:3%;left:7.5%;right:7.5%;bottom:3%;'
+            'overflow:hidden;'
+        )
 
     return f'''
-<div style="position:relative;font-family:Georgia,serif;
-            border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;
-            background:#fff;{lh_bg_style}">
-  <div style="position:relative;background:rgba(255,255,255,0.88);padding:28px 32px">
-    {lh_notice}
-    {pat_badge}
-    {inner_html}
-    <div style="margin-top:16px;padding:10px;background:rgba(248,250,255,0.9);
-                border-radius:6px;font-size:10px;color:#94a3b8;text-align:center">
-      📧 PDF offer letter will be sent as an attachment to <b>{email}</b>
-    </div>
-  </div>
-</div>'''
+<div style="width:100%;max-width:680px;margin:0 auto;font-family:Arial,sans-serif">
 
+  <!-- A4 shell: 680px wide × 961px tall (297/210 ratio) -->
+  <div style="position:relative;width:680px;height:961px;
+              background:#fff;border:1px solid #cbd5e1;border-radius:6px;
+              overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.15);">
+
+    {lh_layer}
+
+    <!-- Offer content printed inside the letterhead empty body zone -->
+    <div style="{content_style}">
+      {pat_badge}
+      {content_html}
+    </div>
+
+  </div>
+
+  <div style="margin-top:8px;padding:7px 12px;background:#f8faff;
+              border:1px solid #e2e8f0;border-radius:6px;
+              font-size:10.5px;color:#64748b;text-align:center">
+    &#128231; PDF offer letter will be sent as attachment to <b>{email}</b>
+  </div>
+
+</div>'''
 
 #  EMAIL HTML BUILDERS
 def offer_email_html(c, hr, accept_link, decline_link):
